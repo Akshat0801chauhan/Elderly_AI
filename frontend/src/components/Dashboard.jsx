@@ -1,8 +1,13 @@
+import { useEffect } from "react";
+
 export default function Dashboard() {
-  return (
-    <div style={{ textAlign: "center", marginTop: "100px" }}>
-      <h1>Welcome 👋</h1>
-      <p>This is your dashboard</p>
-    </div>
-  );
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "/";
+    }
+  }, []);
+
+  return <h1>Welcome to Dashboard</h1>;
 }

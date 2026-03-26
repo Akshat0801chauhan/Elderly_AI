@@ -23,7 +23,8 @@ export default function Register() {
     });
 
     if (res.ok) {
-      navigate("/dashboard"); // ✅ redirect here
+      alert("Registered successfully");
+      navigate("/"); 
     } else {
       alert("Registration failed");
     }

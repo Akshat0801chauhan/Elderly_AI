@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     try {
@@ -13,11 +15,15 @@ export default function Login() {
         body: JSON.stringify(form),
       });
 
-      // const data = await res.json();
+      const data = await res.json(); 
 
       if (res.ok) {
+        localStorage.setItem("token", data.token); 
+
         setMsg("Login successful");
         setErr("");
+
+        navigate("/dashboard"); 
       } else {
         setErr("Invalid credentials");
         setMsg("");

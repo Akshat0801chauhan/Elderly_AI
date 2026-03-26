@@ -1,17 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+
+  
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, []);
 
   return (
     <Routes>
-      {/* MAIN UI (unchanged) */}
+      {}
       <Route
         path="/"
         element={
@@ -33,7 +42,7 @@ function App() {
         }
       />
 
-      {/* DASHBOARD ROUTE */}
+      {/* DASHBOARD */}
       <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   );

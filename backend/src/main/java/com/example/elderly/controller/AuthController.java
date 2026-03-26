@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController
  {   private final AuthService authService;
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request)
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request)
     {
         return ResponseEntity.ok(authService.register(request));
     }

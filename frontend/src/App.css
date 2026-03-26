@@ -1,0 +1,87 @@
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f7f3ee;
+  margin: 0;
+}
+
+/* Container */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Card */
+.card {
+  background: #ffffff;
+  padding: 30px;
+  width: 340px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Title */
+.title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Inputs */
+input, select {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #f9f7f4;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Focus */
+input:focus {
+  border-color: #d18b2c;
+  background: #fff;
+}
+
+/* Button */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  background: #d18b2c;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #b37422;
+}
+
+/* Switch link */
+.switch {
+  text-align: center;
+  margin-top: 15px;
+  color: #7a5c3a;
+  cursor: pointer;
+}
+
+/* Messages */
+.success {
+  color: green;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+  font-size: 14px;
+}

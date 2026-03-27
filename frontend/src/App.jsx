@@ -4,6 +4,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
 import { Routes, Route, useNavigate } from "react-router-dom";
+import Profile from "./components/Profile";
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
@@ -44,6 +45,7 @@ function App() {
 
       {/* DASHBOARD */}
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   );
 }

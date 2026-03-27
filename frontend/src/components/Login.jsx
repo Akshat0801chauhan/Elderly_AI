@@ -15,15 +15,11 @@ export default function Login() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json(); 
+      const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem("token", data.token); 
-
-        setMsg("Login successful");
-        setErr("");
-
-        navigate("/dashboard"); 
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard");
       } else {
         setErr("Invalid credentials");
         setMsg("");

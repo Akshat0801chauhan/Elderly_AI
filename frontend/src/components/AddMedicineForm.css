@@ -1,0 +1,75 @@
+/* Overlay (background blur effect) */
+.form {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0, 0, 0, 0.2);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Form card */
+.form > div {
+  background: #ffffff;
+  padding: 30px;
+  width: 320px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* Title */
+.form h3 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Inputs */
+.form input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #f5f2ee;
+  font-size: 14px;
+}
+
+/* Focus */
+.form input:focus {
+  border-color: #d18b2c;
+  background: #fff;
+  outline: none;
+}
+
+/* Buttons */
+.form button {
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Add / Update button */
+.form button:first-of-type {
+  background: #d18b2c;
+  color: white;
+}
+
+.form button:first-of-type:hover {
+  background: #b37422;
+}
+
+/* Cancel button */
+.form button:last-of-type {
+  background: #eee;
+}

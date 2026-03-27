@@ -69,4 +69,18 @@ public class MedicineService {
 
         return (int) taken;
     }
+
+    public String updateMedicine(String id, AddMedicineRequest request) {
+
+    Medicine med = medicineRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Medicine not found"));
+
+    med.setName(request.getName());
+    med.setDosage(request.getDosage());
+    med.setTime(LocalTime.parse(request.getTime()));
+
+    medicineRepository.save(med);
+
+    return "Medicine updated";
+}
 }

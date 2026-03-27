@@ -15,10 +15,14 @@ body {
 /* Card */
 .card {
   background: #ffffff;
-  padding: 30px;
-  width: 340px;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  padding: 35px;
+  width: 360px;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+
+  display: flex;
+  flex-direction: column; /* 🔥 IMPORTANT (vertical layout) */
+  align-items: stretch;
 }
 
 /* Title */
@@ -26,49 +30,49 @@ body {
   text-align: center;
   font-size: 26px;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 /* Inputs */
-input, select {
+.card input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 14px;
   margin: 10px 0;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #ddd;
-  background: #f9f7f4;
+  background: #f5f2ee;
   font-size: 15px;
   outline: none;
   box-sizing: border-box;
 }
 
 /* Focus */
-input:focus {
+.card input:focus {
   border-color: #d18b2c;
   background: #fff;
 }
 
 /* Button */
-button {
+.card button {
   width: 100%;
   padding: 14px;
-  margin-top: 12px;
+  margin-top: 15px;
   background: #d18b2c;
   color: white;
   font-size: 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
-button:hover {
+.card button:hover {
   background: #b37422;
 }
 
-/* Switch link */
+/* Switch */
 .switch {
   text-align: center;
-  margin-top: 15px;
+  margin-top: 18px;
   color: #7a5c3a;
   cursor: pointer;
 }
@@ -78,10 +82,12 @@ button:hover {
   color: green;
   margin-top: 10px;
   font-size: 14px;
+  text-align: center;
 }
 
 .error {
   color: red;
   margin-top: 10px;
   font-size: 14px;
+  text-align: center;
 }

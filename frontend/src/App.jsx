@@ -3,25 +3,24 @@ import "./App.css";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Dashboard from "./components/Dashboard";
-import { Routes, Route, useNavigate } from "react-router-dom";
 import Profile from "./components/Profile";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { Routes, Route, useNavigate , useLocation} from "react-router-dom";
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
-
-  
+const location = useLocation();
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (token) {
+     if (token && location.pathname === "/") {
       navigate("/dashboard");
     }
-  }, []);
-
+  }, [navigate, location.pathname]);
   return (
     <Routes>
-      {}
+      {/* LOGIN / REGISTER */}
       <Route
         path="/"
         element={
@@ -43,9 +42,24 @@ function App() {
         }
       />
 
-      {/* DASHBOARD */}
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/profile" element={<Profile />} />
+      {/* PROTECTED ROUTES */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

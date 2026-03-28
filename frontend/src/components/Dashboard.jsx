@@ -48,7 +48,22 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ Mark as taken
+  const handleLogout = async () => {
+    const confirmLogout = window.confirm("Are you sure you want to logout?");
+
+  if (!confirmLogout) return;
+  try {
+    await fetch("http://localhost:8080/api/auth/logout", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+  } catch {}
+
+  localStorage.removeItem("token");
+  navigate("/");
+};
   const markTaken = async (id) => {
     try {
       await fetch(`http://localhost:8080/api/medicine/take/${id}`, {
@@ -83,24 +98,23 @@ export default function Dashboard() {
       <div className="sidebar">
         <h2>Memory Helper</h2>
         <p className="sub">Your caring companion</p>
+        <div className="menu" onClick={() => navigate("/profile")}>
+          👤 Profile
+        </div>
 
         <div className="menu">💊 Medicine</div>
         <div className="menu">❤️ Memories</div>
         <div className="menu">✔ Activities</div>
 
-        <div className="menu" onClick={() => navigate("/profile")}>
-          👤 Profile
-        </div>
+       
 
         <div
           className="menu"
-          onClick={() => {
-            localStorage.removeItem("token");
-            navigate("/");
-          }}
+          onClick={handleLogout}
         >
           🚪 Logout
         </div>
+         
       </div>
 
       {/* Main */}

@@ -2,14 +2,13 @@ package com.example.elderly.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
 import com.example.elderly.dto.AddMedicineRequest;
 import com.example.elderly.model.Medicine;
+import com.example.elderly.model.Medicine.MealTiming;
 import com.example.elderly.model.User;
 import com.example.elderly.repo.Medicinerepository;
 import com.example.elderly.repo.UserRepository;
@@ -23,106 +22,98 @@ public class MedicineService {
     private final Medicinerepository medicineRepository;
     private final UserRepository userRepository;
 
-    private static final DateTimeFormatter TIME_FORMAT =
-            DateTimeFormatter.ofPattern("HH:mm");
+    // ── HELPER ───────────────────────────────────────────
 
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public Map<String, String> addMedicine(String email, AddMedicineRequest request) {
+    // ── ADD ──────────────────────────────────────────────
 
+    public Medicine addMedicine(String email, AddMedicineRequest request) {
         User user = getUser(email);
 
-        if (request.getTime() == null || request.getTime().isEmpty()) {
-            throw new RuntimeException("Time is required (HH:mm)");
-        }
-
-        LocalTime time;
-        try {
-            time = LocalTime.parse(request.getTime(), TIME_FORMAT);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid time format. Use HH:mm (e.g. 14:30)");
-        }
-
         Medicine medicine = new Medicine();
+        medicine.setUser(user);
         medicine.setName(request.getName());
         medicine.setDosage(request.getDosage());
-        medicine.setTime(time);
-        medicine.setTaken(false);
-        medicine.setDate(LocalDate.now());
-        medicine.setUser(user);
+        medicine.setTime(LocalTime.parse(request.getTime()));
+        medicine.setDate(LocalDate.now()); // existing behaviour
 
-        medicineRepository.save(medicine);
+        // new fields
+        medicine.setBreakfastTiming(orNone(request.getBreakfastTiming()));
+        medicine.setLunchTiming(orNone(request.getLunchTiming()));
+        medicine.setDinnerTiming(orNone(request.getDinnerTiming()));
+        medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
+        medicine.setStartDate(
+            request.getStartDate() != null
+                ? LocalDate.parse(request.getStartDate())
+                : LocalDate.now()
+        );
+        medicine.setNotes(request.getNotes());
 
-        return Map.of("message", "Medicine added");
+        return medicineRepository.save(medicine);
     }
+
+    // ── GET TODAY ────────────────────────────────────────
 
     public List<Medicine> getTodayMedicines(String email) {
         User user = getUser(email);
-
-        
-        return medicineRepository.findByUserAndDateOrderByTimeAsc(user, LocalDate.now());
+        // Pass user.getId() — native query takes userId (String) not User object
+        return medicineRepository.findActiveOnDate(user.getId(), LocalDate.now());
     }
 
-    
-    public Map<String, String> markAsTaken(String medicineId, String email) {
+    // ── MARK TAKEN ───────────────────────────────────────
 
-        User user = getUser(email);
-
-        Medicine med = medicineRepository.findById(medicineId)
+    public Medicine markAsTaken(String id, String email) {
+        Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Medicine not found"));
 
-        
-        if (!med.getUser().getEmail().equals(user.getEmail())) {
+        if (!medicine.getUser().getEmail().equals(email)) {
             throw new RuntimeException("Unauthorized");
         }
 
-        med.setTaken(true);
-        medicineRepository.save(med);
-
-        return Map.of("message", "Marked as taken");
+        medicine.setTaken(true);
+        return medicineRepository.save(medicine);
     }
 
-    public Map<String, Integer> getProgress(String email) {
+    // ── PROGRESS ─────────────────────────────────────────
 
+    public long getProgress(String email) {
         User user = getUser(email);
-
-        
-        List<Medicine> meds =
-                medicineRepository.findByUserAndDateOrderByTimeAsc(user, LocalDate.now());
-
-        long taken = meds.stream().filter(Medicine::isTaken).count();
-
-        return Map.of(
-                "taken", (int) taken,
-                "total", meds.size()
-        );
+        List<Medicine> todays = medicineRepository.findActiveOnDate(user.getId(), LocalDate.now());
+        return todays.stream().filter(Medicine::isTaken).count();
     }
 
-    public Map<String, String> updateMedicine(String id, AddMedicineRequest request) {
+    // ── UPDATE ───────────────────────────────────────────
 
-        Medicine med = medicineRepository.findById(id)
+    public Medicine updateMedicine(String id, AddMedicineRequest request) {
+        Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Medicine not found"));
 
-        if (request.getTime() == null || request.getTime().isEmpty()) {
-            throw new RuntimeException("Time is required (HH:mm)");
-        }
+        medicine.setName(request.getName());
+        medicine.setDosage(request.getDosage());
+        medicine.setTime(LocalTime.parse(request.getTime()));
 
-        LocalTime time;
-        try {
-            time = LocalTime.parse(request.getTime(), TIME_FORMAT);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid time format. Use HH:mm");
-        }
+        // new fields
+        medicine.setBreakfastTiming(orNone(request.getBreakfastTiming()));
+        medicine.setLunchTiming(orNone(request.getLunchTiming()));
+        medicine.setDinnerTiming(orNone(request.getDinnerTiming()));
+        medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
+        medicine.setStartDate(
+            request.getStartDate() != null
+                ? LocalDate.parse(request.getStartDate())
+                : medicine.getStartDate()
+        );
+        medicine.setNotes(request.getNotes());
 
-        med.setName(request.getName());
-        med.setDosage(request.getDosage());
-        med.setTime(time);
+        return medicineRepository.save(medicine);
+    }
 
-        medicineRepository.save(med);
+    // ── UTIL ─────────────────────────────────────────────
 
-        return Map.of("message", "Medicine updated");
+    private MealTiming orNone(MealTiming value) {
+        return value != null ? value : MealTiming.NONE;
     }
 }

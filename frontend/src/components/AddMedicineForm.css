@@ -1,4 +1,4 @@
-/* 🔥 OVERLAY (FIXED + BLUR + PROPER LAYERING) */
+/* 🔥 OVERLAY */
 .form {
   position: fixed;
   top: 0;
@@ -7,20 +7,22 @@
   height: 100%;
 
   background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px); /* 🔥 smooth glass effect */
+  backdrop-filter: blur(4px);
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  z-index: 1000; /* ✅ ensures it stays above cards */
+  z-index: 1000;
 }
 
-/* 🔥 FORM CARD (MODERN UI) */
-.form > div {
+/* 🔥 FORM CARD */
+.form-card {
   background: #ffffff;
-  padding: 30px;
-  width: 360px;
+  padding: 28px 26px;
+  width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
   border-radius: 20px;
 
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
@@ -32,27 +34,39 @@
   animation: popup 0.25s ease;
 }
 
+/* scrollbar */
+.form-card::-webkit-scrollbar { width: 4px; }
+.form-card::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
 /* ✨ Animation */
 @keyframes popup {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 /* TITLE */
-.form h3 {
+.form-title {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   font-size: 20px;
+  color: #1a2332;
+}
+
+/* SECTION LABEL */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aaab8;
+  margin-top: 4px;
+  margin-bottom: 2px;
 }
 
 /* INPUTS */
-.form input {
+.form-card input[type="text"],
+.form-card input[type="number"],
+.form-card input {
   width: 100%;
   padding: 12px;
   border-radius: 12px;
@@ -60,18 +74,152 @@
   background: #f9fafb;
   font-size: 14px;
   transition: 0.2s;
+  box-sizing: border-box;
 }
 
-/* FOCUS EFFECT */
-.form input:focus {
+.form-card input:focus {
   border-color: #d18b2c;
   background: #ffffff;
   outline: none;
   box-shadow: 0 0 0 2px rgba(209, 139, 44, 0.2);
 }
 
-/* BUTTON BASE */
-.form button {
+/* react-datepicker inside card */
+.form-card .react-datepicker-wrapper {
+  width: 100%;
+}
+.form-card .react-datepicker__input-container input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 14px;
+  transition: 0.2s;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.form-card .react-datepicker__input-container input:focus {
+  border-color: #d18b2c;
+  background: #ffffff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(209, 139, 44, 0.2);
+}
+
+/* ── MEAL TIMING ─────────────────────────────── */
+
+.meal-timing-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meal-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a5568;
+  width: 78px;
+  flex-shrink: 0;
+}
+
+.timing-btns {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.timing-btn {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 13px;
+  color: #6b7a8d;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.timing-btn:hover {
+  background: #fff4e8;
+  border-color: #d18b2c;
+  color: #b37422;
+}
+
+.timing-btn.active {
+  background: #d18b2c;
+  border-color: #d18b2c;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ── DURATION ────────────────────────────────── */
+
+.days-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.days-input {
+  width: 90px !important;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* start date picker sits inline */
+.days-row .react-datepicker-wrapper {
+  flex: 1;
+}
+
+/* PRESET CHIPS */
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 12px;
+  color: #6b7a8d;
+  cursor: pointer;
+  transition: 0.15s;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: #fff4e8;
+  border-color: #d18b2c;
+  color: #b37422;
+}
+
+.chip-active {
+  background: #fff4e8;
+  border-color: #d18b2c;
+  color: #b37422;
+  font-weight: 600;
+}
+
+.end-date-note {
+  font-size: 12px;
+  color: #9aaab8;
+  margin-top: -4px;
+}
+
+/* ── BUTTONS ─────────────────────────────────── */
+
+.form-card button {
   padding: 12px;
   border-radius: 12px;
   border: none;
@@ -80,41 +228,26 @@
   transition: 0.2s;
 }
 
-/* PRIMARY BUTTON (ADD/UPDATE) */
-.form button:first-of-type {
+/* PRIMARY (Add / Update) */
+.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip) {
   background: #d18b2c;
   color: white;
   font-weight: 500;
+  margin-top: 4px;
 }
 
-.form button:first-of-type:hover {
+.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip):hover {
   background: #b37422;
   transform: translateY(-1px);
 }
 
-/* CANCEL BUTTON */
-.form button:last-of-type {
-  background: #f1f5f9;
-  color: #333;
+/* CANCEL */
+.cancel-btn {
+  background: #f1f5f9 !important;
+  color: #333 !important;
 }
 
-.form button:last-of-type:hover {
-  background: #e2e8f0;
-}
-
-/* 🔥 OPTIONAL: CLICK OUTSIDE CLOSE FEEL */
-.form > div:hover {
-  transform: scale(1.01);
-}
-
-.form input[type="time"] {
-  background: #f1f5f9;
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-input[type="time"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.7;
+.cancel-btn:hover {
+  background: #e2e8f0 !important;
+  transform: none !important;
 }

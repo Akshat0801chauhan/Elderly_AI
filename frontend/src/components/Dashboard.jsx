@@ -168,8 +168,8 @@ export default function Dashboard() {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
-    fetchMedicines();
-    fetchProgress();
+    await fetchMedicines();
+    await fetchProgress();
   };
 
   useEffect(() => {

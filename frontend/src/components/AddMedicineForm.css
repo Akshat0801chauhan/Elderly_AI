@@ -1,50 +1,40 @@
-/* 🔥 OVERLAY */
+/* ── OVERLAY ─────────────────────────────────────────────── */
 .form {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   z-index: 1000;
 }
 
-/* 🔥 FORM CARD */
+/* ── FORM CARD ───────────────────────────────────────────── */
 .form-card {
   background: #ffffff;
   padding: 28px 26px;
-  width: 400px;
+  width: 420px;
   max-height: 90vh;
   overflow-y: auto;
   border-radius: 20px;
-
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-
   display: flex;
   flex-direction: column;
   gap: 10px;
-
   animation: popup 0.25s ease;
 }
 
-/* scrollbar */
 .form-card::-webkit-scrollbar { width: 4px; }
 .form-card::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
 
-/* ✨ Animation */
 @keyframes popup {
   from { transform: scale(0.9); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
 }
 
-/* TITLE */
+/* ── TITLE ───────────────────────────────────────────────── */
 .form-title {
   text-align: center;
   margin-bottom: 6px;
@@ -52,7 +42,7 @@
   color: #1a2332;
 }
 
-/* SECTION LABEL */
+/* ── SECTION LABEL ───────────────────────────────────────── */
 .section-label {
   font-size: 11px;
   font-weight: 600;
@@ -63,10 +53,10 @@
   margin-bottom: 2px;
 }
 
-/* INPUTS */
+/* ── INPUTS ──────────────────────────────────────────────── */
 .form-card input[type="text"],
 .form-card input[type="number"],
-.form-card input {
+.form-card input:not([type]) {
   width: 100%;
   padding: 12px;
   border-radius: 12px;
@@ -75,6 +65,7 @@
   font-size: 14px;
   transition: 0.2s;
   box-sizing: border-box;
+  color: #1a2332;
 }
 
 .form-card input:focus {
@@ -84,10 +75,8 @@
   box-shadow: 0 0 0 2px rgba(209, 139, 44, 0.2);
 }
 
-/* react-datepicker inside card */
-.form-card .react-datepicker-wrapper {
-  width: 100%;
-}
+/* react-datepicker wrapper */
+.form-card .react-datepicker-wrapper { width: 100%; }
 .form-card .react-datepicker__input-container input {
   width: 100%;
   padding: 12px;
@@ -98,16 +87,227 @@
   transition: 0.2s;
   box-sizing: border-box;
   cursor: pointer;
+  color: #1a2332;
 }
 .form-card .react-datepicker__input-container input:focus {
   border-color: #d18b2c;
-  background: #ffffff;
+  background: #fff;
   outline: none;
   box-shadow: 0 0 0 2px rgba(209, 139, 44, 0.2);
 }
 
-/* ── MEAL TIMING ─────────────────────────────── */
+/* ── CUSTOM TIME PICKER ──────────────────────────────────── */
 
+.tp-root {
+  position: relative;
+  width: 100%;
+}
+
+/* Trigger button */
+.tp-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+
+.tp-trigger:hover {
+  border-color: #d18b2c;
+  background: #fff;
+}
+
+.tp-trigger--set {
+  border-color: #d18b2c;
+  background: #fff9f0;
+}
+
+.tp-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tp-label {
+  flex: 1;
+  font-size: 14px;
+  color: #1a2332;
+  font-weight: 500;
+}
+
+.tp-trigger:not(.tp-trigger--set) .tp-label {
+  color: #9aaab8;
+  font-weight: 400;
+}
+
+.tp-arrow {
+  font-size: 10px;
+  color: #9aaab8;
+}
+
+/* Dropdown panel */
+.tp-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  z-index: 999;
+  animation: dropIn 0.18s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tp-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aaab8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Three columns: hour | colon | minute | period */
+.tp-cols {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tp-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.tp-col--period {
+  flex: 0 0 64px;
+}
+
+.tp-col-head {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c0c8d4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Scrollable list */
+.tp-scroll {
+  width: 100%;
+  max-height: 160px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  background: #fafafa;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.tp-scroll::-webkit-scrollbar { width: 3px; }
+.tp-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+
+.tp-cell {
+  padding: 8px 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: 0.12s;
+  border-radius: 8px;
+}
+
+.tp-cell:hover {
+  background: #fff4e6;
+  color: #d18b2c;
+}
+
+.tp-cell--on {
+  background: #d18b2c;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+/* Colon separator */
+.tp-colon {
+  font-size: 22px;
+  font-weight: 700;
+  color: #c0c8d4;
+  margin-top: 28px;
+  flex-shrink: 0;
+}
+
+/* AM / PM buttons */
+.tp-period {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.tp-period-btn {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #6b7a8d;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.tp-period-btn:hover {
+  background: #fff4e6;
+  border-color: #d18b2c;
+  color: #d18b2c;
+}
+
+.tp-period-btn--on {
+  background: #d18b2c;
+  border-color: #d18b2c;
+  color: #ffffff;
+}
+
+/* Confirm button */
+.tp-done-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #d18b2c;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.tp-done-btn:hover {
+  background: #b37422;
+}
+
+/* ── MEAL TIMING ─────────────────────────────────────────── */
 .meal-timing-group {
   display: flex;
   flex-direction: column;
@@ -159,8 +359,7 @@
   font-weight: 600;
 }
 
-/* ── DURATION ────────────────────────────────── */
-
+/* ── DURATION ────────────────────────────────────────────── */
 .days-row {
   display: flex;
   gap: 8px;
@@ -173,12 +372,8 @@
   flex-shrink: 0;
 }
 
-/* start date picker sits inline */
-.days-row .react-datepicker-wrapper {
-  flex: 1;
-}
+.days-row .react-datepicker-wrapper { flex: 1; }
 
-/* PRESET CHIPS */
 .preset-chips {
   display: flex;
   flex-wrap: wrap;
@@ -217,37 +412,54 @@
   margin-top: -4px;
 }
 
-/* ── BUTTONS ─────────────────────────────────── */
-
-.form-card button {
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip):not(.tp-trigger):not(.tp-done-btn) {
   padding: 12px;
   border-radius: 12px;
   border: none;
-  cursor: pointer;
-  font-size: 14px;
-  transition: 0.2s;
-}
-
-/* PRIMARY (Add / Update) */
-.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip) {
   background: #d18b2c;
   color: white;
   font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
   margin-top: 4px;
 }
 
-.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip):hover {
+.form-card button:not(.cancel-btn):not(.timing-btn):not(.chip):not(.tp-trigger):not(.tp-done-btn):hover {
   background: #b37422;
   transform: translateY(-1px);
 }
 
-/* CANCEL */
 .cancel-btn {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb !important;
   background: #f1f5f9 !important;
   color: #333 !important;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
 .cancel-btn:hover {
   background: #e2e8f0 !important;
+}
+
+/* ── ERROR BANNER ────────────────────────────────────────── */
+.form-error {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #c53030;
+  text-align: center;
+}
+
+/* Disabled submit button */
+.form-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
   transform: none !important;
 }

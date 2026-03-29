@@ -1,4 +1,4 @@
-/* Overlay (background blur effect) */
+/* 🔥 OVERLAY (FIXED + BLUR + PROPER LAYERING) */
 .form {
   position: fixed;
   top: 0;
@@ -6,70 +6,115 @@
   width: 100%;
   height: 100%;
 
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px); /* 🔥 smooth glass effect */
 
   display: flex;
   justify-content: center;
   align-items: center;
+
+  z-index: 1000; /* ✅ ensures it stays above cards */
 }
 
-/* Form card */
+/* 🔥 FORM CARD (MODERN UI) */
 .form > div {
   background: #ffffff;
   padding: 30px;
-  width: 320px;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  width: 360px;
+  border-radius: 20px;
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 
   display: flex;
   flex-direction: column;
+  gap: 10px;
+
+  animation: popup 0.25s ease;
 }
 
-/* Title */
+/* ✨ Animation */
+@keyframes popup {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* TITLE */
 .form h3 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  font-size: 20px;
 }
 
-/* Inputs */
+/* INPUTS */
 .form input {
   width: 100%;
   padding: 12px;
-  margin: 10px 0;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  background: #f5f2ee;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
   font-size: 14px;
+  transition: 0.2s;
 }
 
-/* Focus */
+/* FOCUS EFFECT */
 .form input:focus {
   border-color: #d18b2c;
-  background: #fff;
+  background: #ffffff;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(209, 139, 44, 0.2);
 }
 
-/* Buttons */
+/* BUTTON BASE */
 .form button {
   padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   font-size: 14px;
+  transition: 0.2s;
 }
 
-/* Add / Update button */
+/* PRIMARY BUTTON (ADD/UPDATE) */
 .form button:first-of-type {
   background: #d18b2c;
   color: white;
+  font-weight: 500;
 }
 
 .form button:first-of-type:hover {
   background: #b37422;
+  transform: translateY(-1px);
 }
 
-/* Cancel button */
+/* CANCEL BUTTON */
 .form button:last-of-type {
-  background: #eee;
+  background: #f1f5f9;
+  color: #333;
+}
+
+.form button:last-of-type:hover {
+  background: #e2e8f0;
+}
+
+/* 🔥 OPTIONAL: CLICK OUTSIDE CLOSE FEEL */
+.form > div:hover {
+  transform: scale(1.01);
+}
+
+.form input[type="time"] {
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
 }

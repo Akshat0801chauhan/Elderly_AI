@@ -1,7 +1,15 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  FaHome,
+  FaUser,
+  FaHeart,
+  FaCheck,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -13,26 +21,56 @@ export default function Layout({ children }) {
 
       {/* SIDEBAR */}
       <div className="sidebar">
-        <h2>Memory Helper</h2>
+        <h2 className="logo">✨ Memory Helper</h2>
         <p className="sub">Your caring companion</p>
 
-        <div className="menu" onClick={() => navigate("/profile")}>
-          👤 Profile
+        {/* HOME */}
+        <div
+          className={`menu ${
+            location.pathname === "/" || location.pathname === "/dashboard"
+              ? "active"
+              : ""
+          }`}
+          onClick={() => {
+            if (
+              location.pathname !== "/" &&
+              location.pathname !== "/dashboard"
+            ) {
+              navigate("/");
+            }
+          }}
+        >
+          <FaHome /> <span>Home</span>
         </div>
 
-        <div className="menu" onClick={() => navigate("/dashboard")}>
-          💊 Medicine
+        {/* PROFILE */}
+        <div
+          className={`menu ${location.pathname === "/profile" ? "active" : ""}`}
+          onClick={() => {
+            if (location.pathname !== "/profile") {
+              navigate("/profile");
+            }
+          }}
+        >
+          <FaUser /> <span>Profile</span>
         </div>
 
-        <div className="menu">❤️ Memories</div>
-        <div className="menu">✔ Activities</div>
+        {/* OTHER */}
+        <div className="menu">
+          <FaHeart /> <span>Memories</span>
+        </div>
 
-        <div className="menu" onClick={handleLogout}>
-          🚪 Logout
+        <div className="menu">
+          <FaCheck /> <span>Activities</span>
+        </div>
+
+        {/* LOGOUT */}
+        <div className="menu logout" onClick={handleLogout}>
+          <FaSignOutAlt /> <span>Logout</span>
         </div>
       </div>
 
-      {/* 🔥 THIS IS THE MOST IMPORTANT LINE */}
+      {/* MAIN CONTENT */}
       {children}
 
     </div>

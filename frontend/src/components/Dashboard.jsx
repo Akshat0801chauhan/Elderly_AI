@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "./Dashboard.css";
 import AddMedicineForm from "./AddMedicineForm";
+import Layout from "./Layout"; // ✅ IMPORTANT
 import { useNavigate } from "react-router-dom";
+import { FaPills, FaCheck, FaPen } from "react-icons/fa";
 
 export default function Dashboard() {
   const [medicines, setMedicines] = useState([]);
@@ -12,180 +14,113 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  // ✅ Fetch medicines
   const fetchMedicines = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/api/medicine", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch medicines");
-
-      const data = await res.json();
-      setMedicines(data);
-    } catch (err) {
-      console.error(err);
-    }
+    const res = await fetch("http://localhost:8080/api/medicine", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setMedicines(data);
   };
 
-  // ✅ Fetch progress
   const fetchProgress = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/medicine/progress", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error("Failed to fetch progress");
+      const text = await res.text(); // ✅ safe handling
+      const data = text ? JSON.parse(text) : 0;
 
-      const data = await res.json();
       setProgress(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setProgress(0);
     }
   };
 
-  const handleLogout = async () => {
-    const confirmLogout = window.confirm("Are you sure you want to logout?");
-
-  if (!confirmLogout) return;
-  try {
-    await fetch("http://localhost:8080/api/auth/logout", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-  } catch {}
-
-  localStorage.removeItem("token");
-  navigate("/");
-};
   const markTaken = async (id) => {
-    try {
-      await fetch(`http://localhost:8080/api/medicine/take/${id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      fetchMedicines();
-      fetchProgress();
-    } catch (err) {
-      console.error(err);
-    }
+    await fetch(`http://localhost:8080/api/medicine/take/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    fetchMedicines();
+    fetchProgress();
   };
 
   useEffect(() => {
-    // 🔥 IMPORTANT: protect dashboard
-    if (!token) {
-      navigate("/");
-      return;
-    }
-
+    if (!token) return navigate("/login");
     fetchMedicines();
     fetchProgress();
   }, []);
 
   return (
-    <div className="dashboard">
+    <Layout> {/* ✅ WRAPPED */}
 
-      {/* Sidebar */}
-      <div className="sidebar">
-        <h2>Memory Helper</h2>
-        <p className="sub">Your caring companion</p>
-        <div className="menu" onClick={() => navigate("/profile")}>
-          👤 Profile
-        </div>
-
-        <div className="menu">💊 Medicine</div>
-        <div className="menu">❤️ Memories</div>
-        <div className="menu">✔ Activities</div>
-
-       
-
-        <div
-          className="menu"
-          onClick={handleLogout}
-        >
-          🚪 Logout
-        </div>
-         
-      </div>
-
-      {/* Main */}
+      {/* MAIN */}
       <div className="main">
         <h2>Medications Today</h2>
 
-        {medicines.length === 0 && !showForm ? (
-          <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <p>No medicines added yet</p>
-            <button onClick={() => setShowForm(true)}>
-              + Add Medicine
-            </button>
-          </div>
-        ) : (
-          <>
-            <button
-              style={{ marginBottom: "15px" }}
-              onClick={() => setShowForm(true)}
-            >
-              + Add Medicine
-            </button>
+        <button className="add-btn" onClick={() => setShowForm(true)}>
+          + Add Medicine
+        </button>
 
-            {showForm && (
-              <AddMedicineForm
-                close={() => {
-                  setShowForm(false);
-                  setEditingMed(null);
-                }}
-                fetchMedicines={fetchMedicines}
-                fetchProgress={fetchProgress}
-                existing={editingMed}
-              />
-            )}
-
-            {medicines.map((med) => (
-              <div className="card" key={med.id}>
-                <div>
-                  <h3>{med.name}</h3>
-                  <p>{med.dosage}</p>
-                </div>
-
-                <span className="time">{med.time}</span>
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    className={med.taken ? "taken" : "take"}
-                    onClick={() => !med.taken && markTaken(med.id)}
-                  >
-                    {med.taken ? "✔ Taken" : "Take Now"}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setEditingMed(med);
-                      setShowForm(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-            ))}
-          </>
+        {showForm && (
+          <AddMedicineForm
+            close={() => {
+              setShowForm(false);
+              setEditingMed(null);
+            }}
+            fetchMedicines={fetchMedicines}
+            fetchProgress={fetchProgress}
+            existing={editingMed}
+          />
         )}
+
+        {medicines.map((med) => (
+          <div className={`med-card ${med.taken ? "done" : ""}`} key={med.id}>
+
+            <FaPen
+              className="edit-icon"
+              onClick={() => {
+                setEditingMed(med);
+                setShowForm(true);
+              }}
+            />
+
+            <div className="med-left">
+              <div className="med-icon">
+                <FaPills />
+              </div>
+
+              <div>
+                <h3>{med.name}</h3>
+                <p>{med.dosage}</p>
+              </div>
+            </div>
+
+            <div className="med-right">
+              <span className="time">{med.time}</span>
+
+              <button
+                className={med.taken ? "taken-btn" : "take-btn"}
+                onClick={() => !med.taken && markTaken(med.id)}
+              >
+                {med.taken ? <><FaCheck /> Taken</> : "Take Now"}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Progress */}
+      {/* PROGRESS */}
       <div className="progress-box">
-        <h3>Progress</h3>
+        <h3>Daily Activities</h3>
 
-        <p>{progress} of {medicines.length}</p>
+        <div className="progress-header">
+          <span>Progress</span>
+          <span className="count">
+            {progress} of {medicines.length}
+          </span>
+        </div>
 
         <div className="progress-bar">
           <div
@@ -198,6 +133,7 @@ export default function Dashboard() {
 
         <p className="msg">You are doing wonderfully today!</p>
       </div>
-    </div>
+
+    </Layout>
   );
 }

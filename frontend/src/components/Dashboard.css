@@ -1,166 +1,178 @@
+/* ================= DASHBOARD ================= */
 .dashboard {
   display: flex;
-  background: #f7f3ee;
   height: 100vh;
-  font-family: "Segoe UI";
+  background: #f3f4f6; /* ✅ your original */
 }
 
-/* Sidebar */
+/* ================= SIDEBAR ================= */
 .sidebar {
   width: 220px;
-  background: #fff;
+  background: #f9fafb;
   padding: 20px;
-  border-right: 1px solid #eee;
 }
 
-.sidebar h2 {
-  margin-bottom: 5px;
+.logo {
+  font-weight: bold;
 }
 
 .sub {
   font-size: 12px;
   color: gray;
-  margin-bottom: 20px;
 }
 
 .menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 10px;
-  margin: 10px 0;
-  border-radius: 8px;
+  margin-top: 10px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
-.menu.active {
-  background: #f3e4c8;
+.menu:hover {
+  background: #f1f5f9;
 }
 
-/* Main */
+.menu.active {
+  background: #fde68a;
+}
+
+.logout {
+  margin-top: 40px;
+  color: red;
+}
+
+/* ================= MAIN ================= */
 .main {
   flex: 1;
   padding: 30px;
 }
 
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.time {
-  background: #eee;
-  padding: 5px 10px;
-  border-radius: 8px;
-}
-
-button {
-  padding: 10px 20px;
+/* BUTTON */
+.add-btn {
+  margin: 15px 0;
+  padding: 8px 15px;
   border-radius: 20px;
   border: none;
+  background: #e5e7eb;
   cursor: pointer;
 }
 
-.take {
-  background: #d97706;
-  color: white;
+/* ================= MED CARD ================= */
+.med-card {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 20px 25px;
+  border-radius: 16px;
+  margin-bottom: 15px;
+
+  width: 100%;         /* ✅ FIXED (was 500px) */
+  max-width: 600px;    /* keeps same look */
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04); /* subtle improvement */
+  transition: 0.2s;
 }
 
-.taken {
-  background: #6b8f71;
-  color: white;
+.med-card:hover {
+  transform: translateY(-2px);
 }
 
-/* Progress */
+/* GREEN STATE */
+.med-card.done {
+  background: #d1fae5;
+}
+
+.med-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.med-icon {
+  background: #e5e7eb;
+  padding: 12px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+.med-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* TIME */
+.time {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 10px;
+}
+
+/* BUTTONS */
+.take-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 25px;
+}
+
+.taken-btn {
+  background: #065f46;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 25px;
+}
+
+/* EDIT ICON */
+.edit-icon {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  cursor: pointer;
+  color: #555;
+}
+
+/* ================= PROGRESS ================= */
 .progress-box {
-  width: 250px;
+  width: 280px;
+  margin: 30px;
+  background: #f8fafc;
   padding: 20px;
-  background: white;
-  margin: 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   height: fit-content;
 }
 
+.progress-box h3 {
+  margin-bottom: 15px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.count {
+  color: #d97706;
+  font-weight: 600;
+}
+
 .progress-bar {
-  height: 10px;
-  background: #eee;
+  height: 8px;
+  background: #e5e7eb;
   border-radius: 10px;
-  margin: 10px 0;
+  margin-top: 10px;
 }
 
 .fill {
   height: 100%;
   background: #d97706;
   border-radius: 10px;
-}
-
-.msg {
-  font-size: 12px;
-  color: gray;
-}
-.form {
-  position: fixed;
-  top: 30%;
-  left: 40%;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-}
-/* PROFILE */
-
-.profile-card {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  max-width: 420px;
-  margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 15px;
-}
-
-.avatar {
-  font-size: 40px;
-  background: #f3e4c8;
-  padding: 15px;
-  border-radius: 50%;
-}
-
-.profile-details {
-  margin-top: 20px;
-  line-height: 2;
-}
-
-.edit-btn {
-  margin-top: 20px;
-  background: #d97706;
-  color: white;
-}
-
-/* FORM */
-
-.form {
-  position: fixed;
-  top: 30%;
-  left: 40%;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-}
-
-.form input {
-  display: block;
-  margin: 10px 0;
-  padding: 8px;
-  width: 200px;
 }

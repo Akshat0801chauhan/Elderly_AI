@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Layout from "./Layout";
+import { FaUser, FaPen } from "react-icons/fa";
+import "./Profile.css";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -8,15 +10,11 @@ export default function Profile() {
 
   const token = localStorage.getItem("token");
 
-  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await fetch("http://localhost:8080/api/profile", {
-          method:"GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
@@ -29,7 +27,6 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  
   const handleUpdate = async () => {
     try {
       await fetch("http://localhost:8080/api/profile", {
@@ -52,38 +49,67 @@ export default function Profile() {
 
   return (
     <Layout>
-      {/* MAIN */}
-      <div className="main">
-        <h2>My Profile 👤</h2>
+      <div className="content">
 
-        <div className="profile-card">
-          <div className="profile-header">
-            <div className="avatar">👤</div>
-            <div>
-              <h3>{profile.name}</h3>
-              <p>{profile.email}</p>
+        {/* LEFT */}
+        <div className="left">
+          <h2 className="section-title">My Profile</h2>
+
+          <div className="profile-card">
+
+            {/* EDIT ICON */}
+            <FaPen
+              className="edit-icon"
+              onClick={() => {
+                setEditing(true);
+                setFormData(profile);
+              }}
+            />
+
+            <div className="profile-header">
+              <div className="avatar">
+                <FaUser />
+              </div>
+
+              <div>
+                <h3>{profile.name}</h3>
+                <p className="email">{profile.email}</p>
+              </div>
+            </div>
+
+            <div className="profile-details">
+              <div className="detail-row">
+                <span className="label">Phone</span>
+                <span className="value">{profile.phone}</span>
+              </div>
+
+              <div className="detail-row">
+                <span className="label">Address</span>
+                <span className="value">{profile.address}</span>
+              </div>
             </div>
           </div>
-
-          <div className="profile-details">
-            <p><strong>Phone:</strong> {profile.phone}</p>
-            <p><strong>Address:</strong> {profile.address}</p>
-          </div>
-
-          <button
-            className="edit-btn"
-            onClick={() => {
-              setEditing(true);
-              setFormData(profile);
-            }}
-          >
-            Edit Profile
-          </button>
         </div>
 
-        {/* EDIT FORM */}
-        {editing && (
-          <div className="form">
+        {/* RIGHT */}
+        <div className="right">
+          <h3 className="section-title">Account Info</h3>
+
+          <div className="info-card">
+            <p className="label">Status</p>
+            <p className="active">Active</p>
+
+            <p className="label" style={{ marginTop: "10px" }}>Role</p>
+            <p className="value">{profile.role}</p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* EDIT MODAL */}
+      {editing && (
+        <div className="form">
+          <div className="form-card">
             <h3>Edit Profile</h3>
 
             <input
@@ -110,20 +136,13 @@ export default function Profile() {
               placeholder="Address"
             />
 
-            <div style={{ marginTop: "10px" }}>
+            <div className="form-actions">
               <button onClick={handleUpdate}>Save</button>
               <button onClick={() => setEditing(false)}>Cancel</button>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* RIGHT SIDE */}
-      <div className="progress-box">
-        <h3>Account Info</h3>
-        <p>Status: Active ✅</p>
-        <p>Role: {profile.role}</p>
-      </div>
+        </div>
+      )}
     </Layout>
   );
 }

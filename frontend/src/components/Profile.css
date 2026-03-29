@@ -1,0 +1,88 @@
+/* ================= LAYOUT ================= */
+.content {
+  display: flex;
+  gap: 40px;
+  padding: 30px;
+}
+
+.left {
+  flex: 1;
+}
+
+.right {
+  flex: 1;
+}
+
+/* ================= TITLE ================= */
+.section-title {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+/* ================= PROFILE CARD ================= */
+.profile-card {
+  position: relative;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 20px;
+  width: 350px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.avatar {
+  background: #e5e7eb;
+  padding: 15px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.email {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.profile-details {
+  margin-top: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.label {
+  color: #6b7280;
+}
+
+.value {
+  font-weight: 500;
+}
+
+/* ================= INFO CARD ================= */
+.info-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 20px;
+  width: 300px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* ================= FORM ================= */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}

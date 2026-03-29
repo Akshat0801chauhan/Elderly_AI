@@ -10,5 +10,5 @@ import com.example.elderly.model.User;
 
 public interface Medicinerepository extends JpaRepository<Medicine, String> {
 
-    List<Medicine> findByUserAndDate(User user, LocalDate date);
+    List<Medicine> findByUserAndDateOrderByTimeAsc(User user, LocalDate date);
 }

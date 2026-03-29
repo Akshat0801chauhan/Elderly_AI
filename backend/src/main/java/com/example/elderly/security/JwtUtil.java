@@ -1,5 +1,7 @@
 package com.example.elderly.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -20,7 +22,6 @@ public class JwtUtil {
 
     private SecretKey key;
 
-    
     @PostConstruct
     public void init() {
         this.key = Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -35,12 +36,34 @@ public class JwtUtil {
                 .compact();
     }
 
+    
+    private Claims extractAllClaims(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     public String extractEmail(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        Claims claims = extractAllClaims(token);
+        return claims != null ? claims.getSubject() : null;
+    }
+
+    
+    public boolean isTokenValid(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            if (claims == null) return false;
+
+            
+            return claims.getExpiration().after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

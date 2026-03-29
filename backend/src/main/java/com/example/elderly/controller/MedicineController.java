@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.elderly.dto.AddMedicineRequest;
 import com.example.elderly.service.MedicineService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/medicine")
@@ -24,15 +26,19 @@ public class MedicineController {
     private final MedicineService medicineService;
 
     private String getEmail() {
-        return SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        return auth.getName();
     }
 
     @PostMapping
-    public ResponseEntity<?> addMedicine(@RequestBody AddMedicineRequest request) {
-        return ResponseEntity.ok(medicineService.addMedicine(getEmail(), request));
+    public ResponseEntity<?> addMedicine(@Valid @RequestBody AddMedicineRequest request) {
+        return ResponseEntity.status(201)
+                .body(medicineService.addMedicine(getEmail(), request));
     }
 
     @GetMapping
@@ -40,9 +46,10 @@ public class MedicineController {
         return ResponseEntity.ok(medicineService.getTodayMedicines(getEmail()));
     }
 
+    
     @PutMapping("/take/{id}")
     public ResponseEntity<?> markAsTaken(@PathVariable String id) {
-        return ResponseEntity.ok(medicineService.markAsTaken(id));
+        return ResponseEntity.ok(medicineService.markAsTaken(id, getEmail()));
     }
 
     @GetMapping("/progress")
@@ -51,10 +58,10 @@ public class MedicineController {
     }
 
     @PutMapping("/{id}")
-public ResponseEntity<?> updateMedicine(
-        @PathVariable String id,
-        @RequestBody AddMedicineRequest request
-) {
-    return ResponseEntity.ok(medicineService.updateMedicine(id, request));
-}
+    public ResponseEntity<?> updateMedicine(
+            @PathVariable String id,
+            @Valid @RequestBody AddMedicineRequest request
+    ) {
+        return ResponseEntity.ok(medicineService.updateMedicine(id, request));
+    }
 }

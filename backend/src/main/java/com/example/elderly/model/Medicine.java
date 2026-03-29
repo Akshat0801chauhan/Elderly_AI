@@ -3,6 +3,8 @@ package com.example.elderly.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,7 +19,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Medicine {
-     @Id
+
+    @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
@@ -25,11 +28,12 @@ public class Medicine {
 
     private String dosage;
 
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime time;
 
-    private boolean taken;
+    private boolean taken = false; 
 
-    private LocalDate date;
+    private LocalDate date = LocalDate.now(); 
 
     @ManyToOne
     private User user;

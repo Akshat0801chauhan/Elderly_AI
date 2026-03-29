@@ -11,9 +11,30 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+  const handleLogout = async () => {
+    
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("token");
+
+    try {
+     
+      await fetch("http://localhost:8080/api/auth/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (e) {
+     
+      console.error("Logout request failed", e);
+    } finally {
+      
+      localStorage.clear();
+      navigate("/");
+    }
   };
 
   return (

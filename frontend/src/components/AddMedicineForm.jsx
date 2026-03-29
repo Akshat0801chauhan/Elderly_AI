@@ -9,17 +9,20 @@ export default function AddMedicineForm({
   fetchProgress,
   existing,
 }) {
-  const token = localStorage.getItem("token");
-
   const [form, setForm] = useState({
     name: "",
     dosage: "",
     time: null,
   });
 
-  // ✅ EDIT MODE (backend sends "HH:mm")
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    if (existing && existing.time) {
+    if (!existing) return;
+
+    if (existing.time) {
       try {
         const [hours, minutes] = existing.time.split(":");
 
@@ -29,8 +32,8 @@ export default function AddMedicineForm({
         date.setSeconds(0);
 
         setForm({
-          name: existing.name,
-          dosage: existing.dosage,
+          name: existing.name || "",
+          dosage: existing.dosage || "",
           time: date,
         });
       } catch {
@@ -43,33 +46,41 @@ export default function AddMedicineForm({
     }
   }, [existing]);
 
-  // ✅ FORMAT TIME → "HH:mm" (backend requirement)
   const formatTime = (date) => {
     if (!date) return "";
-
-    let hours = date.getHours();
-    let minutes = date.getMinutes();
-
-    return `${hours.toString().padStart(2, "0")}:${minutes
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
       .toString()
       .padStart(2, "0")}`;
   };
 
   const handleSubmit = async () => {
+    setMessage("");
+    setError("");
+
+    // Read token fresh inside handleSubmit, not at mount
+    const token = localStorage.getItem("token");
+
     try {
-      // ✅ VALIDATION
       if (!form.name || !form.dosage || !form.time) {
-        alert("Please fill all fields");
+        setError("Please fill all fields");
         return;
       }
+
+      if (!token) {
+        setError("Session expired. Please login again.");
+        localStorage.clear();
+        window.location.href = "/";
+        return;
+      }
+
+      setLoading(true);
 
       const payload = {
         name: form.name.trim(),
         dosage: form.dosage.trim(),
-        time: formatTime(form.time), // 🔥 FIXED
+        time: formatTime(form.time),
       };
-
-      console.log("Payload:", payload);
 
       const url = existing
         ? `http://localhost:8080/api/medicine/${existing.id}`
@@ -86,68 +97,92 @@ export default function AddMedicineForm({
         body: JSON.stringify(payload),
       });
 
+      // Handle auth errors first before anything else
+      if (res.status === 401 || res.status === 403) {
+        localStorage.clear();
+        window.location.href = "/login";
+        return;
+      }
+
+      //Read body ONCE and reuse — no double .json() call
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const errText = await res.text();
-        console.error("Server Error:", errText);
-        alert(errText);
+        setError(data?.message || "Server error");
         return;
       }
 
       fetchMedicines();
       fetchProgress();
-      close();
+
+      setMessage(
+        data?.message ||
+          (existing
+            ? "Medicine updated successfully"
+            : "Medicine added successfully")
+      );
+
+      setForm({
+        name: "",
+        dosage: "",
+        time: null,
+      });
+
+      setTimeout(() => {
+        close();
+      }, 1000);
     } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="form">
       <div className="form-card">
-
         <h3 className="form-title">
           {existing ? "Update Medicine" : "Add Medicine"}
         </h3>
 
+        {error && <p className="error-msg">{error}</p>}
+        {message && <p className="success-msg">{message}</p>}
+
         <input
           placeholder="Medicine Name"
           value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
 
         <input
           placeholder="Dosage"
           value={form.dosage}
-          onChange={(e) =>
-            setForm({ ...form, dosage: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, dosage: e.target.value })}
         />
 
-        {/* ✅ TIME PICKER */}
         <DatePicker
           selected={form.time}
-          onChange={(date) =>
-            setForm({ ...form, time: date })
-          }
+          onChange={(date) => setForm({ ...form, time: date })}
           showTimeSelect
           showTimeSelectOnly
           timeIntervals={5}
-          timeCaption="Time"
-          dateFormat="h:mm aa"   // UI shows AM/PM
+          timeCaption="Select Time"
+          dateFormat="hh:mm aa"
           placeholderText="Select time"
+          className="time-input"
+          isClearable
+          withPortal
+          shouldCloseOnSelect
         />
 
-        <button onClick={handleSubmit}>
-          {existing ? "Update" : "Add"}
+        <button onClick={handleSubmit} disabled={loading}>
+          {loading ? "Saving..." : existing ? "Update" : "Add"}
         </button>
 
         <button className="cancel-btn" onClick={close}>
           Cancel
         </button>
-
       </div>
     </div>
   );

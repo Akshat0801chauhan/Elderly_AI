@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Dashboard.css";
 import AddMedicineForm from "./AddMedicineForm";
-import Layout from "./Layout"; // ✅ IMPORTANT
+import Layout from "./Layout";
 import { useNavigate } from "react-router-dom";
 import { FaPills, FaCheck, FaPen } from "react-icons/fa";
 
@@ -12,50 +12,75 @@ export default function Dashboard() {
   const [editingMed, setEditingMed] = useState(null);
 
   const navigate = useNavigate();
+
+  // Safe fetch wrapper
+  const isLoggingOut = React.useRef(false);
+
+const safeFetch = async (url, options = {}) => {
   const token = localStorage.getItem("token");
 
+  if (!token || isLoggingOut.current) {
+    if (!isLoggingOut.current) navigate("/");
+    return null;
+  }
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (res.status === 401) {          // ← use 401, not 403
+    if (!isLoggingOut.current) {
+      isLoggingOut.current = true;
+      alert("Session expired. Please login again.");
+      localStorage.clear();
+      navigate("/");
+    }
+    return null;
+  }
+
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
+  // Fetch medicines
   const fetchMedicines = async () => {
-    const res = await fetch("http://localhost:8080/api/medicine", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setMedicines(data);
+    const data = await safeFetch("http://localhost:8080/api/medicine");
+    if (data) setMedicines(data);
   };
 
+  // Fetch progress (FIXED)
   const fetchProgress = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/api/medicine/progress", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const data = await safeFetch(
+      "http://localhost:8080/api/medicine/progress"
+    );
 
-      const text = await res.text(); // ✅ safe handling
-      const data = text ? JSON.parse(text) : 0;
-
-      setProgress(data);
-    } catch {
-      setProgress(0);
+    if (data) {
+      setProgress(data.taken || 0); 
     }
   };
 
+  //  Mark taken
   const markTaken = async (id) => {
-    await fetch(`http://localhost:8080/api/medicine/take/${id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await safeFetch(
+      `http://localhost:8080/api/medicine/take/${id}`,
+      { method: "PUT" }
+    );
+
     fetchMedicines();
     fetchProgress();
   };
 
   useEffect(() => {
-    if (!token) return navigate("/login");
     fetchMedicines();
     fetchProgress();
   }, []);
 
   return (
-    <Layout> {/* ✅ WRAPPED */}
-
-      {/* MAIN */}
+    <Layout>
       <div className="main">
         <h2>Medications Today</h2>
 
@@ -76,8 +101,10 @@ export default function Dashboard() {
         )}
 
         {medicines.map((med) => (
-          <div className={`med-card ${med.taken ? "done" : ""}`} key={med.id}>
-
+          <div
+            className={`med-card ${med.taken ? "done" : ""}`}
+            key={med.id}
+          >
             <FaPen
               className="edit-icon"
               onClick={() => {
@@ -104,7 +131,13 @@ export default function Dashboard() {
                 className={med.taken ? "taken-btn" : "take-btn"}
                 onClick={() => !med.taken && markTaken(med.id)}
               >
-                {med.taken ? <><FaCheck /> Taken</> : "Take Now"}
+                {med.taken ? (
+                  <>
+                    <FaCheck /> Taken
+                  </>
+                ) : (
+                  "Take Now"
+                )}
               </button>
             </div>
           </div>
@@ -126,14 +159,15 @@ export default function Dashboard() {
           <div
             className="fill"
             style={{
-              width: `${(progress / (medicines.length || 1)) * 100}%`,
+              width: `${
+                (progress / (medicines.length || 1)) * 100
+              }%`,
             }}
           ></div>
         </div>
 
         <p className="msg">You are doing wonderfully today!</p>
       </div>
-
     </Layout>
   );
 }

@@ -1,0 +1,71 @@
+# =========================
+# FRONTEND (React)
+# =========================
+frontend/node_modules/
+frontend/.pnp/
+frontend/.pnp.js
+frontend/coverage/
+frontend/build/
+
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# =========================
+# BACKEND (Spring Boot / Java)
+# =========================
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.env
+backend/src/main/resources/application.properties
+
+# Allow specific target folders if needed
+!backend/**/src/main/**/target/
+!backend/**/src/test/**/target/
+
+# =========================
+# IDE FILES
+# =========================
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# =========================
+# SYSTEM FILES
+# =========================
+.DS_Store
+
+# =========================
+# OPTIONAL
+# =========================
+HELP.md

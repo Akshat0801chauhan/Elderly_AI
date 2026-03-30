@@ -1,0 +1,93 @@
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f7f3ee;
+  margin: 0;
+}
+
+/* Container */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Card */
+.card {
+  background: #ffffff;
+  padding: 35px;
+  width: 360px;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+
+  display: flex;
+  flex-direction: column; /* 🔥 IMPORTANT (vertical layout) */
+  align-items: stretch;
+}
+
+/* Title */
+.title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 25px;
+}
+
+/* Inputs */
+.card input {
+  width: 100%;
+  padding: 14px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #f5f2ee;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Focus */
+.card input:focus {
+  border-color: #d18b2c;
+  background: #fff;
+}
+
+/* Button */
+.card button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  background: #d18b2c;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.card button:hover {
+  background: #b37422;
+}
+
+/* Switch */
+.switch {
+  text-align: center;
+  margin-top: 18px;
+  color: #7a5c3a;
+  cursor: pointer;
+}
+
+/* Messages */
+.success {
+  color: green;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
+}

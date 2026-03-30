@@ -1,0 +1,23 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #f7f3ee;
+}
+
+.login-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+}
+
+.login-card input {
+  padding: 10px;
+  width: 150px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}

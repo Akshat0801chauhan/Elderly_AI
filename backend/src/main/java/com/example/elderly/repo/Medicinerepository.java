@@ -12,12 +12,13 @@ import com.example.elderly.model.User;
 
 public interface Medicinerepository extends JpaRepository<Medicine, String> {
 
-    // existing — kept as-is
+    // existing
     List<Medicine> findByUserAndDateOrderByTimeAsc(User user, LocalDate date);
 
-    // Native PostgreSQL query — avoids Hibernate 7 restriction on date + integer in JPQL
-    // Returns medicines whose schedule window covers :date
-    // i.e.  start_date <= :date  AND  :date <= start_date + (number_of_days - 1) days
+    // all medicines for a user (management page)
+    List<Medicine> findByUser(User user);
+
+    // active medicines on a specific date (PostgreSQL native query)
     @Query(
         value = """
             SELECT * FROM medicine

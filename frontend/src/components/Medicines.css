@@ -1,0 +1,287 @@
+/* ── PAGE ────────────────────────────────────────────────── */
+.med-page {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+  max-width: 800px;
+}
+
+.med-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.med-page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2332;
+  margin: 0 0 4px;
+}
+
+.med-page-sub { font-size: 13px; color: #9aaab8; margin: 0; }
+
+/* ── ADD BUTTON ──────────────────────────────────────────── */
+.med-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #d18b2c;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+.med-add-btn:hover { background: #b37422; transform: translateY(-1px); }
+
+/* ── TABS ────────────────────────────────────────────────── */
+.med-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f0f2f5;
+  padding: 4px;
+  border-radius: 12px;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+
+.med-tab {
+  padding: 8px 22px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7a8d;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.med-tab--active {
+  background: #fff;
+  color: #d18b2c;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ── EMPTY ───────────────────────────────────────────────── */
+.med-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9aaab8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.med-empty-icon { font-size: 48px; opacity: 0.35; }
+.med-empty p    { font-size: 15px; margin: 0; }
+
+/* ── SECTION ─────────────────────────────────────────────── */
+.med-section { margin-bottom: 24px; }
+
+.med-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid;
+  margin-bottom: 10px;
+}
+
+.med-section-dot   { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.med-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #1a2332; flex: 1; margin: 0; }
+.med-section-count { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+
+/* ── MED CARD ────────────────────────────────────────────── */
+.med-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #edf0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  margin-bottom: 8px;
+  animation: slideIn 0.22s ease;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.med-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+.med-card--completed { border-left: 4px solid #38a169; opacity: 0.82; }
+.med-card--due       { border-left: 4px solid #e53e3e; }
+.med-card--upcoming  { border-left: 4px solid #d18b2c; }
+
+.med-left { display: flex; align-items: center; gap: 12px; }
+
+.med-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.med-icon--completed { background: #f0fff4; color: #38a169; }
+.med-icon--due       { background: #fff5f5; color: #e53e3e; }
+.med-icon--upcoming  { background: #fff8ee; color: #d18b2c; }
+
+.med-card h3     { font-size: 15px; font-weight: 600; color: #1a2332; margin: 0 0 2px; }
+.med-dosage      { font-size: 13px; color: #6b7a8d; margin: 0; }
+.med-meta        { font-size: 12px; color: #9aaab8; margin: 2px 0 0; }
+
+.med-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+
+.med-time { font-size: 13px; font-weight: 600; color: #4a5568; }
+
+.badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+}
+.badge--done     { background: #f0fff4; color: #276749; }
+.badge--upcoming { background: #fff8ee; color: #b37422; }
+
+.take-btn {
+  background: #e53e3e; color: #fff;
+  border: none; padding: 7px 14px;
+  border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: 0.15s; white-space: nowrap;
+}
+.take-btn:hover { background: #c53030; }
+
+/* Edit / Delete action buttons */
+.med-actions { display: flex; gap: 6px; }
+
+.action-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px; border: 1px solid #edf0f5;
+  background: #fafbfc; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: 0.15s;
+}
+.action-btn--edit:hover { background: #fff8ee; color: #d18b2c; border-color: #d18b2c; }
+.action-btn--del:hover  { background: #fff5f5; color: #e53e3e; border-color: #e53e3e; }
+
+/* ── CALENDAR ────────────────────────────────────────────── */
+.cal-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.cal-wrap {
+  background: #fff;
+  border: 1px solid #edf0f5;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cal-title { font-size: 15px; font-weight: 700; color: #1a2332; }
+
+.cal-nav {
+  width: 30px; height: 30px;
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+  background: #fafbfc;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.15s;
+}
+.cal-nav:hover { background: #fff4e6; border-color: #d18b2c; color: #d18b2c; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-grid--days { margin-bottom: 6px; }
+
+.cal-day-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aaab8;
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+
+.cal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: #4a5568;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.cal-cell:hover      { background: #fff4e6; color: #d18b2c; }
+.cal-cell--today     { background: #fff4e6; color: #d18b2c; font-weight: 700; }
+.cal-cell--selected  { background: #d18b2c !important; color: #fff !important; font-weight: 700; }
+
+.cal-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%; transform: translateX(-50%);
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #d18b2c;
+}
+.cal-cell--selected .cal-dot { background: #fff; }
+
+/* ── SCHEDULE PANEL ──────────────────────────────────────── */
+.schedule-panel {
+  background: #fff;
+  border: 1px solid #edf0f5;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.schedule-date-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9aaab8;
+  margin: 0 0 14px;
+}
+
+.schedule-empty { font-size: 14px; color: #c0c8d4; font-style: italic; }
+
+.schedule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f7f8fc;
+}
+.schedule-item:last-child { border-bottom: none; }
+
+.schedule-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #d18b2c; margin-top: 6px; flex-shrink: 0;
+}
+
+.schedule-name    { font-size: 14px; font-weight: 600; color: #1a2332; margin: 0 0 2px; }
+.schedule-dosage  { font-size: 12px; color: #9aaab8; font-weight: 400; margin-left: 6px; }
+.schedule-time    { font-size: 13px; color: #d18b2c; font-weight: 600; margin: 0; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

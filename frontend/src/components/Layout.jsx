@@ -1,41 +1,21 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FaHome,
-  FaUser,
-  FaHeart,
-  FaCheck,
-  FaSignOutAlt,
+  FaHome, FaUser, FaHeart, FaCheck, FaSignOutAlt, FaPills,
 } from "react-icons/fa";
 
 export default function Layout({ children }) {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const handleLogout = async () => {
-    
-    const confirmed = window.confirm("Are you sure you want to logout?");
-    if (!confirmed) return;
-
-    const token = localStorage.getItem("token");
-
-    try {
-     
-      await fetch("http://localhost:8080/api/auth/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (e) {
-     
-      console.error("Logout request failed", e);
-    } finally {
-      
-      localStorage.clear();
-      navigate("/");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
   };
+
+  const isActive = (paths) =>
+    Array.isArray(paths)
+      ? paths.some(p => location.pathname === p)
+      : location.pathname === paths;
 
   return (
     <div className="dashboard">
@@ -45,47 +25,32 @@ export default function Layout({ children }) {
         <h2 className="logo">✨ Memory Helper</h2>
         <p className="sub">Your caring companion</p>
 
-        {/* HOME */}
-        <div
-          className={`menu ${
-            location.pathname === "/" || location.pathname === "/dashboard"
-              ? "active"
-              : ""
-          }`}
-          onClick={() => {
-            if (
-              location.pathname !== "/" &&
-              location.pathname !== "/dashboard"
-            ) {
-              navigate("/");
-            }
-          }}
-        >
+        <div className={`menu ${isActive(["/", "/dashboard"]) ? "active" : ""}`}
+          onClick={() => navigate("/dashboard")}>
           <FaHome /> <span>Home</span>
         </div>
 
-        {/* PROFILE */}
-        <div
-          className={`menu ${location.pathname === "/profile" ? "active" : ""}`}
-          onClick={() => {
-            if (location.pathname !== "/profile") {
-              navigate("/profile");
-            }
-          }}
-        >
-          <FaUser /> <span>Profile</span>
+        <div className={`menu ${isActive("/medicines") ? "active" : ""}`}
+          onClick={() => navigate("/medicines")}>
+          <FaPills /> <span>Medicines</span>
         </div>
 
-        {/* OTHER */}
+        <div className={`menu ${isActive("/profile") ? "active" : ""}`}
+          onClick={() => navigate("/profile")}>
+          <FaUser /> <span>Profile</span>
+        </div>
+        <div
+          className={`menu ${isActive("/assistant") ? "active" : ""}`}
+          onClick={() => navigate("/assistant")}>
+          <FaCheck /> <span>Personal AI</span>
+        </div>
+
         <div className="menu">
           <FaHeart /> <span>Memories</span>
         </div>
 
-        <div className="menu">
-          <FaCheck /> <span>Activities</span>
-        </div>
 
-        {/* LOGOUT */}
+
         <div className="menu logout" onClick={handleLogout}>
           <FaSignOutAlt /> <span>Logout</span>
         </div>

@@ -12,6 +12,7 @@ import com.example.elderly.dto.ProfileResponse;
 import com.example.elderly.dto.UpdateProfileRequest;
 import com.example.elderly.service.ProfileService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,7 +36,7 @@ public class ProfileController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request) {
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
 
         String email = SecurityContextHolder
                 .getContext()

@@ -2,6 +2,8 @@ package com.example.elderly.service;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import com.example.elderly.dto.AuthRequest;
 import com.example.elderly.dto.AuthResponse;
@@ -26,10 +28,11 @@ public class AuthService {
 
 public AuthResponse login(AuthRequest request)
 {
-    User user=userRepository.findByEmail(request.getEmail()).orElseThrow(()->new RuntimeException("user not found"));
+    User user = userRepository.findByEmail(request.getEmail().trim())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
     if(!encoder.matches(request.getPassword(),user.getPassword())){
-        throw new RuntimeException("Invalid Password");
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }
     String token = jwtUtil.generateToken(user.getEmail());
 
@@ -37,19 +40,28 @@ public AuthResponse login(AuthRequest request)
 
 }
 public AuthResponse register(RegisterRequest request) {
+    String email = request.getEmail().trim();
+    Role role = parseRole(request.getRole());
+    validateRoleSpecificFields(request, role);
 
-    if(userRepository.findByEmail(request.getEmail()).isPresent()) {
-        throw new RuntimeException("User already exists");
+    if(userRepository.findByEmail(email).isPresent()) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
     }
 
     User user = new User();
-    user.setName(request.getName());
-    user.setEmail(request.getEmail());
+    user.setName(request.getName().trim());
+    user.setEmail(email);
     user.setPassword(encoder.encode(request.getPassword()));
-    user.setRole(Role.valueOf(request.getRole().toUpperCase()));
-    user.setPhone(request.getPhone());
-    user.setAddress(request.getAddress());
-    user.setImageUrl(request.getImageUrl());
+    user.setRole(role);
+    user.setPhone(request.getPhone().trim());
+    user.setAddress(request.getAddress().trim());
+    user.setImageUrl(trimToNull(request.getImageUrl()));
+    user.setDateOfBirth(trimToNull(request.getDateOfBirth()));
+    user.setGender(trimToNull(request.getGender()));
+    user.setBloodType(role == Role.ELDERLY ? trimToNull(request.getBloodType()) : null);
+    user.setAllergies(role == Role.ELDERLY ? trimToNull(request.getAllergies()) : null);
+    user.setChronicDiseases(role == Role.ELDERLY ? trimToNull(request.getChronicDiseases()) : null);
+    user.setPastIllnesses(role == Role.ELDERLY ? trimToNull(request.getPastIllnesses()) : null);
 
     userRepository.save(user);
 
@@ -57,6 +69,42 @@ public AuthResponse register(RegisterRequest request) {
     String token = jwtUtil.generateToken(user.getEmail());
 
     return new AuthResponse(token);
+}
+
+private Role parseRole(String roleValue) {
+    try {
+        return Role.valueOf(roleValue.trim().toUpperCase());
+    } catch (IllegalArgumentException | NullPointerException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role must be ELDERLY or CAREGIVER");
+    }
+}
+
+private void validateRoleSpecificFields(RegisterRequest request, Role role) {
+    if (role != Role.ELDERLY) {
+        return;
+    }
+
+    requireField(request.getDateOfBirth(), "Date of birth is required for elderly users");
+    requireField(request.getGender(), "Gender is required for elderly users");
+    requireField(request.getBloodType(), "Blood type is required for elderly users");
+    requireField(request.getAllergies(), "Allergies are required for elderly users");
+    requireField(request.getChronicDiseases(), "Chronic diseases are required for elderly users");
+    requireField(request.getPastIllnesses(), "Past illnesses are required for elderly users");
+}
+
+private void requireField(String value, String message) {
+    if (value == null || value.trim().isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+}
+
+private String trimToNull(String value) {
+    if (value == null) {
+        return null;
+    }
+
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
 }
 
 

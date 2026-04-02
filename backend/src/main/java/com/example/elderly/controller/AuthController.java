@@ -13,6 +13,7 @@ import com.example.elderly.service.AuthService;
 import com.example.elderly.service.TokenBlacklist;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
@@ -22,13 +23,13 @@ public class AuthController
 
     private final TokenBlacklist tokenBlacklist;
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request)
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request)
     {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest)
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest)
     {
         return ResponseEntity.ok(authService.login(authRequest));
     }

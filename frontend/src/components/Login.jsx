@@ -41,7 +41,7 @@ export default function Login() {
         localStorage.setItem("token", data.token);
         navigate("/dashboard");
       } else {
-        setErrors({ api: "Invalid credentials" });
+        setErrors({ api: data.message || "Invalid credentials" });
       }
     } catch {
       setErrors({ api: "Server error" });

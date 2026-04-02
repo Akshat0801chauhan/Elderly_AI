@@ -1,0 +1,144 @@
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.register-form input,
+.register-form select {
+  width: 100%;
+  padding: 14px;
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #f5f2ee;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.register-form input:focus,
+.register-form select:focus {
+  border-color: #d18b2c;
+  background: #fff;
+}
+
+.register-role-note {
+  margin: 0 0 10px;
+  color: #7a5c3a;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.register-health-section {
+  margin-top: 4px;
+  padding: 24px 28px;
+  border-radius: 14px;
+  background: #fcfaf7;
+  border: 1px solid #eee3d3;
+}
+
+.register-health-title {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #7a5c3a;
+}
+
+.register-health-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.register-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.register-input-wrap {
+  margin: 0;
+}
+
+.register-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a5c3a;
+  padding-left: 2px;
+}
+
+.register-form select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #9b8f7f 50%),
+    linear-gradient(135deg, #9b8f7f 50%, transparent 50%),
+    linear-gradient(#f5f2ee, #f5f2ee);
+  background-position:
+    calc(100% - 22px) calc(50% - 3px),
+    calc(100% - 16px) calc(50% - 3px),
+    0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.register-date-input {
+  color-scheme: light;
+}
+
+.register-role-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.register-role-picker-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a5c3a;
+}
+
+.register-role-options {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 0 auto 6px;
+  flex-wrap: wrap;
+}
+
+.register-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7a5c3a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.register-radio-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #d18b2c;
+}
+
+@media (max-width: 520px) {
+  .register-form {
+    gap: 12px;
+  }
+
+  .register-health-section {
+    padding: 18px;
+  }
+
+  .register-role-options {
+    gap: 12px;
+  }
+}

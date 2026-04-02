@@ -33,5 +33,11 @@ public class User {
     private Role role;
     private String phone;
     private String address;
-    private String imageUrl; 
+    private String imageUrl;
+    private String dateOfBirth;
+    private String gender;
+    private String bloodType;
+    private String allergies;
+    private String chronicDiseases;
+    private String pastIllnesses;
 }

@@ -65,7 +65,7 @@ public class MedicineController {
     public ResponseEntity<?> updateMedicine(
             @PathVariable String id,
             @Valid @RequestBody AddMedicineRequest request) {
-        return ResponseEntity.ok(medicineService.updateMedicine(id, request));
+        return ResponseEntity.ok(medicineService.updateMedicine(id, request, getEmail()));
     }
 
     // Delete medicine

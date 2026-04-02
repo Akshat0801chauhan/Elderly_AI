@@ -28,6 +28,7 @@ function App() {
         path="/"
         element={
           <div className="container">
+            <div className="auth-brand">Elderly AI</div>
             <div className="card">
               <h2 className="title">{isLogin ? "Login" : "Sign Up"}</h2>
               {isLogin ? <Login /> : <Register />}

@@ -29,6 +29,7 @@ export default function Profile() {
   const [formData, setFormData] = useState({});
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("general");
 
   const token = localStorage.getItem("token");
@@ -39,11 +40,15 @@ export default function Profile() {
         const res = await fetch("http://localhost:8080/api/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (!res.ok) {
+          throw new Error("Failed to load profile");
+        }
         const data = await res.json();
         setProfile(data);
         setFormData(data);
       } catch (err) {
         console.error(err);
+        setError("Could not load profile");
       }
     };
     fetchProfile();
@@ -51,17 +56,40 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      await fetch("http://localhost:8080/api/profile", {
+      setError("");
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        imageUrl: formData.imageUrl,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        bloodType: formData.bloodType,
+        allergies: formData.allergies,
+        chronicDiseases: formData.chronicDiseases,
+        pastIllnesses: formData.pastIllnesses,
+      };
+
+      const res = await fetch("http://localhost:8080/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-      setProfile(formData);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || "Profile update failed");
+      }
+
+      const updatedProfile = { ...profile, ...payload };
+      setProfile(updatedProfile);
+      setFormData(updatedProfile);
       setEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
       console.error(err);
+      setError(err.message || "Profile update failed");
     }
   };
 
@@ -79,6 +107,7 @@ export default function Profile() {
   const initials = profile.name
     ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
+  const isElderly = profile.role === "ELDERLY";
 
   return (
     <Layout>
@@ -124,6 +153,7 @@ export default function Profile() {
           )}
 
           {saved && <p className="pf-saved">Profile updated!</p>}
+          {error && <p className="error">{error}</p>}
         </div>
 
         {/* Right: tabbed details */}
@@ -133,7 +163,7 @@ export default function Profile() {
           <div className="pf-tabs">
             {[
               { id: "general", label: "General info" },
-              { id: "health", label: "Health info" },
+              ...(isElderly ? [{ id: "health", label: "Health info" }] : []),
             ].map((t) => (
               <button
                 key={t.id}
@@ -154,11 +184,15 @@ export default function Profile() {
               </div>
               <div className="pf-grid">
                 <Field label="Full Name" icon={FaUser} field="name" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
-                <Field label="Email" icon={FaEnvelope} field="email" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                <Field label="Email" icon={FaEnvelope} field="email" readOnly editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 <Field label="Phone" icon={FaPhone} field="phone" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 <Field label="Role" icon={FaShieldAlt} field="role" readOnly editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
-                <Field label="Date of Birth" icon={FaCalendarAlt} field="dateOfBirth" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
-                <Field label="Gender" icon={FaVenusMars} field="gender" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                {isElderly && (
+                  <Field label="Date of Birth" icon={FaCalendarAlt} field="dateOfBirth" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                )}
+                {isElderly && (
+                  <Field label="Gender" icon={FaVenusMars} field="gender" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                )}
               </div>
 
               {/* Address full width */}
@@ -178,7 +212,7 @@ export default function Profile() {
           )}
 
           {/* Health Info */}
-          {activeTab === "health" && (
+          {isElderly && activeTab === "health" && (
             <div className="pf-section">
               <div className="pf-section-header">
                 <h3>Health Information</h3>

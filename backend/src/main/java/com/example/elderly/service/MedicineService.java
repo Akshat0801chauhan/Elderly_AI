@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.elderly.dto.AddMedicineRequest;
 import com.example.elderly.model.Medicine;
@@ -112,9 +114,12 @@ public class MedicineService {
 
     // ── UPDATE ────────────────────────────────────────────
 
-    public Medicine updateMedicine(String id, AddMedicineRequest request) {
+    public Medicine updateMedicine(String id, AddMedicineRequest request, String email) {
         Medicine medicine = medicineRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Medicine not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+        if (!medicine.getUser().getEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot update this medicine");
+        }
         medicine.setName(request.getName());
         medicine.setDosage(request.getDosage());
         medicine.setTime(LocalTime.parse(request.getTime()));

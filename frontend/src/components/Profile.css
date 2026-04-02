@@ -1,209 +1,199 @@
-/* ================= PAGE ================= */
-.profile-page {
+/* ── PAGE ────────────────────────────────────────────────── */
+.pf-page {
   display: flex;
-  flex-direction: column;
-  gap: 28px;
-  padding: 36px 40px;
-  width: 100%;
-  box-sizing: border-box;
+  gap: 24px;
+  padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+  align-items: flex-start;
 }
 
-/* ================= TOP SECTION: Avatar + Name ================= */
-.profile-top {
-  display: flex;
-  align-items: center;
-  gap: 28px;
+.pf-loading {
+  display: flex; align-items: center; gap: 12px;
+  padding: 40px; color: #9aaab8; font-size: 14px; flex: 1;
 }
-
-.avatar-xl {
-  width: 110px;
-  height: 110px;
+.pf-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #d18b2c;
   border-radius: 50%;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 38px;
-  font-weight: 700;
-  color: #374151;
-  flex-shrink: 0;
-  letter-spacing: 2px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  animation: spin 0.7s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.profile-top-info {
+/* ── LEFT SIDEBAR CARD ───────────────────────────────────── */
+.pf-sidebar-card {
+  width: 240px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #edf0f5;
+  padding: 28px 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  top: 0;
 }
 
-.profile-name {
-  font-size: 26px;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
+.pf-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, #d18b2c, #f0a83c);
+  color: #fff; font-size: 26px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(209,139,44,0.35);
+  margin-bottom: 4px;
 }
 
-.profile-email {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
+.pf-name  { font-size: 17px; font-weight: 700; color: #1a2332; margin: 0; text-align: center; }
+.pf-email { font-size: 12px; color: #9aaab8; margin: 0; text-align: center; word-break: break-all; }
+
+.pf-role-badge {
+  background: #fff8ee; color: #d18b2c;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px;
+  border: 1px solid rgba(209,139,44,0.25);
+  margin-top: 2px;
 }
 
-/* ================= BIG CARD ================= */
-.profile-card {
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-  padding: 36px 40px;
-  width: 100%;
-  box-sizing: border-box;
+.pf-divider {
+  width: 100%; height: 1px;
+  background: #f0f2f5; margin: 8px 0;
 }
 
-.card-title-row {
+.pf-quick-info { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.pf-quick-row  {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #6b7a8d;
+}
+.pf-quick-icon { color: #9aaab8; font-size: 11px; flex-shrink: 0; }
+
+/* Buttons */
+.pf-edit-btn {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; justify-content: center;
+  margin-top: 8px; padding: 10px;
+  background: #f4f6fb; color: #4a5568;
+  border: 1px solid #edf0f5; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: 0.15s;
+}
+.pf-edit-btn:hover { background: #fff8ee; color: #d18b2c; border-color: #d18b2c; }
+
+.pf-edit-actions { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
+
+.pf-save-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px; background: #38a169; color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
+}
+.pf-save-btn:hover { background: #2f8a5a; }
+
+.pf-cancel-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px; background: #f4f6fb; color: #6b7a8d;
+  border: 1px solid #edf0f5; border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
+}
+.pf-cancel-btn:hover { background: #edf0f5; }
+
+.pf-saved { font-size: 12px; color: #38a169; font-weight: 600; margin: 4px 0 0; }
+
+/* ── RIGHT MAIN ──────────────────────────────────────────── */
+.pf-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tabs */
+.pf-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
+  gap: 0;
+  border-bottom: 2px solid #edf0f5;
+  margin-bottom: 24px;
 }
 
-.section-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0;
+.pf-tab {
+  padding: 10px 22px;
+  border: none; background: transparent;
+  font-size: 14px; font-weight: 500; color: #6b7a8d;
+  cursor: pointer; transition: 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.pf-tab:hover  { color: #d18b2c; }
+.pf-tab--on    { color: #d18b2c; font-weight: 700; border-bottom-color: #d18b2c; }
+
+/* Section */
+.pf-section {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #edf0f5;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-/* ================= EDIT / SAVE BUTTONS ================= */
-.edit-btn {
-  background: #f3f4f6;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: background 0.2s;
+.pf-section-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
 }
-.edit-btn:hover { background: #e5e7eb; }
-
-.edit-actions {
-  display: flex;
-  gap: 10px;
+.pf-section-header h3 {
+  font-size: 16px; font-weight: 700; color: #1a2332; margin: 0;
+}
+.pf-editing-badge {
+  font-size: 11px; font-weight: 700;
+  background: #fff8ee; color: #d18b2c;
+  border: 1px solid rgba(209,139,44,0.25);
+  padding: 3px 10px; border-radius: 20px;
 }
 
-.save-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #16a34a;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.save-btn:hover { background: #15803d; }
-
-.cancel-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.cancel-btn:hover { background: #e5e7eb; }
-
-/* ================= SUCCESS MESSAGE ================= */
-.saved-msg {
-  color: #16a34a;
-  font-size: 13px;
-  font-weight: 500;
-  margin: -14px 0 20px 0;
-}
-
-/* ================= FIELDS GRID — 3 columns now ================= */
-.fields-grid {
+/* Fields grid */
+.pf-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 32px 40px;
+  gap: 24px 32px;
+  margin-bottom: 24px;
 }
 
-.field-block {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.pf-field { display: flex; flex-direction: column; gap: 6px; }
+.pf-field--full { grid-column: 1 / -1; }
+
+.pf-field-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: #9aaab8; margin: 0;
+}
+.pf-field-icon { font-size: 10px; }
+
+.pf-field-value {
+  font-size: 15px; font-weight: 500; color: #1a2332; margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f5;
 }
 
-/* Address spans 2 cols, Role takes 1 */
-.field-block.full-width {
-  grid-column: span 2;
+.pf-field-input {
+  font-size: 14px; font-weight: 500; color: #1a2332;
+  border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 10px 12px; outline: none;
+  transition: 0.18s; background: #fafbfc;
+  width: 100%; box-sizing: border-box;
 }
-
-.field-label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.field-icon {
-  font-size: 11px;
-  color: #9ca3af;
-}
-
-.field-value {
-  font-size: 15px;
-  font-weight: 500;
-  color: #111827;
-  margin: 0;
-  padding: 10px 0;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.field-input {
-  font-size: 15px;
-  font-weight: 500;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 10px 14px;
-  outline: none;
-  transition: border-color 0.2s;
-  background: #fafafa;
-  width: 100%;
-  box-sizing: border-box;
-}
-.field-input:focus {
-  border-color: #9ca3af;
+.pf-field-input:focus {
+  border-color: #d18b2c;
   background: #fff;
+  box-shadow: 0 0 0 2px rgba(209,139,44,0.12);
 }
 
-/* ================= RESPONSIVE ================= */
-@media (max-width: 900px) {
-  .fields-grid { grid-template-columns: 1fr 1fr; }
-  .field-block.full-width { grid-column: 1 / -1; }
+/* Responsive */
+@media (max-width: 1000px) {
+  .pf-grid { grid-template-columns: 1fr 1fr; }
 }
-
-@media (max-width: 600px) {
-  .profile-page { padding: 20px; }
-  .fields-grid { grid-template-columns: 1fr; }
-  .field-block.full-width { grid-column: 1; }
-  .avatar-xl { width: 80px; height: 80px; font-size: 28px; }
-  .profile-name { font-size: 20px; }
+@media (max-width: 700px) {
+  .pf-page { flex-direction: column; padding: 20px; }
+  .pf-sidebar-card { width: 100%; position: static; }
+  .pf-grid { grid-template-columns: 1fr; }
 }

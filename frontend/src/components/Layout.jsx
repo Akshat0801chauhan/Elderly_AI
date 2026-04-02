@@ -8,6 +8,8 @@ export default function Layout({ children }) {
   const location  = useLocation();
 
   const handleLogout = () => {
+    const shouldLogout = window.confirm("Are you sure you want to log out?");
+    if (!shouldLogout) return;
     localStorage.removeItem("token");
     navigate("/");
   };

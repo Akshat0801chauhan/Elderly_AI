@@ -21,11 +21,8 @@ frontend/yarn-error.log*
 # =========================
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
-<<<<<<< HEAD
-=======
 backend/.env
 backend/src/main/resources/application.properties
->>>>>>> 64fd011d030ae09481b2bc38f4427c9f31706393
 
 # Allow specific target folders if needed
 !backend/**/src/main/**/target/

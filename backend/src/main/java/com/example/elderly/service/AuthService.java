@@ -4,6 +4,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 import com.example.elderly.dto.AuthRequest;
 import com.example.elderly.dto.AuthResponse;
@@ -90,6 +92,7 @@ private void validateRoleSpecificFields(RegisterRequest request, Role role) {
     requireField(request.getAllergies(), "Allergies are required for elderly users");
     requireField(request.getChronicDiseases(), "Chronic diseases are required for elderly users");
     requireField(request.getPastIllnesses(), "Past illnesses are required for elderly users");
+    validateDateOfBirth(request.getDateOfBirth());
 }
 
 private void requireField(String value, String message) {
@@ -105,6 +108,17 @@ private String trimToNull(String value) {
 
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
+}
+
+private void validateDateOfBirth(String value) {
+    try {
+        LocalDate dob = LocalDate.parse(value.trim());
+        if (dob.isAfter(LocalDate.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth cannot be in the future");
+        }
+    } catch (DateTimeParseException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth must be a valid date");
+    }
 }
 
 

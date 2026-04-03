@@ -53,6 +53,13 @@
   margin-bottom: 2px;
 }
 
+.form-help {
+  margin: 0 0 6px;
+  color: #7a8797;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* ── INPUTS ──────────────────────────────────────────────── */
 .form-card input[type="text"],
 .form-card input[type="number"],
@@ -320,18 +327,37 @@
   gap: 10px;
 }
 
+.meal-copy {
+  width: 150px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .meal-name {
   font-size: 13px;
   font-weight: 500;
   color: #4a5568;
-  width: 78px;
-  flex-shrink: 0;
+}
+
+.meal-slot-note {
+  font-size: 11px;
+  color: #9aaab8;
+  line-height: 1.4;
 }
 
 .timing-btns {
   display: flex;
   gap: 6px;
   flex: 1;
+}
+
+.meal-controls {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .timing-btn {
@@ -357,6 +383,22 @@
   border-color: #d18b2c;
   color: #ffffff;
   font-weight: 600;
+}
+
+.slot-time-input {
+  width: 120px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #9aaab8;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.slot-time-input--active {
+  background: #fff;
+  color: #1a2332;
 }
 
 /* ── DURATION ────────────────────────────────────────────── */
@@ -462,4 +504,25 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
+}
+
+@media (max-width: 540px) {
+  .meal-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .meal-copy {
+    width: 100%;
+  }
+
+  .meal-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .slot-time-input {
+    width: 100%;
+  }
 }

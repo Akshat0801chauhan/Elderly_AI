@@ -1,6 +1,10 @@
 package com.example.elderly.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 import com.example.elderly.dto.ProfileResponse;
 import com.example.elderly.dto.UpdateProfileRequest;
@@ -76,6 +80,8 @@ public String updateProfileByEmail(String email, UpdateProfileRequest request) {
     User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
+    validateProfileRequest(user, request);
+
     user.setName(request.getName().trim());
     user.setPhone(request.getPhone().trim());
     user.setAddress(request.getAddress().trim());
@@ -87,6 +93,17 @@ public String updateProfileByEmail(String email, UpdateProfileRequest request) {
     userRepository.save(user);
 
     return "Profile updated successfully";
+}
+
+private void validateProfileRequest(User user, UpdateProfileRequest request) {
+    if (user.getRole() != Role.ELDERLY) {
+        return;
+    }
+
+    requireField(request.getDateOfBirth(), "Date of birth is required for elderly users");
+    requireField(request.getGender(), "Gender is required for elderly users");
+    requireField(request.getBloodType(), "Blood type is required for elderly users");
+    validateDateOfBirth(request.getDateOfBirth());
 }
 
 private void applyHealthFields(User user, UpdateProfileRequest request) {
@@ -115,5 +132,22 @@ private String trimToNull(String value) {
 
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
+}
+
+private void requireField(String value, String message) {
+    if (value == null || value.trim().isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+}
+
+private void validateDateOfBirth(String value) {
+    try {
+        LocalDate dob = LocalDate.parse(value.trim());
+        if (dob.isAfter(LocalDate.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth cannot be in the future");
+        }
+    } catch (DateTimeParseException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth must be a valid date");
+    }
 }
 }

@@ -45,9 +45,11 @@ function isMedicineActiveOn(med, date) {
 }
 
 
-function MedCard({ log, status, onEdit, onDelete }) {
+function MedCard({ log, status, isElderly, onTake, onEdit, onDelete, takingId }) {
   const med = log.medicine || log;
   const mealInfo = formatMeal(med);
+  const showTakeAction = isElderly && status !== "completed" && med.id;
+  const showManageActions = !isElderly;
 
   return (
     <div className={`mc mc--${status}`}>
@@ -77,20 +79,34 @@ function MedCard({ log, status, onEdit, onDelete }) {
         )}
 
         <div className="mc-actions">
-          <button
-            className="mc-action mc-action--edit"
-            onClick={() => onEdit(log)}
-            title="Edit"
-          >
-            <FaPen />
-          </button>
-          <button
-            className="mc-action mc-action--del"
-            onClick={() => onDelete(med.id)}
-            title="Delete"
-          >
-            <FaTrash />
-          </button>
+          {showTakeAction ? (
+            <button
+              className="mc-take-btn"
+              onClick={() => onTake(med.id)}
+              disabled={takingId === med.id}
+              title="Take now"
+            >
+              <FaCheck />
+              {takingId === med.id ? "Saving..." : "Take now"}
+            </button>
+          ) : showManageActions ? (
+            <>
+              <button
+                className="mc-action mc-action--edit"
+                onClick={() => onEdit(log)}
+                title="Edit"
+              >
+                <FaPen />
+              </button>
+              <button
+                className="mc-action mc-action--del"
+                onClick={() => onDelete(med.id)}
+                title="Delete"
+              >
+                <FaTrash />
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </div>
@@ -181,15 +197,18 @@ function SchedulePanel({ medicines, date }) {
 export default function Medicines() {
   const [logs, setLogs]       = useState([]);
   const [allMeds, setAllMeds] = useState([]);
+  const [role, setRole]       = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm]   = useState(false);
   const [editing, setEditing]     = useState(null);
   const [activeTab, setActiveTab] = useState("today");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [search, setSearch]   = useState("");
+  const [takingId, setTakingId] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const isElderly = role === "ELDERLY";
 
   const fetchToday = async () => {
     try {
@@ -221,12 +240,49 @@ export default function Medicines() {
     } catch { setAllMeds([]); }
   };
 
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setRole(data.role || "");
+    } catch {
+      setRole("");
+    }
+  };
+
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([fetchToday(), fetchAll()]);
+      await Promise.all([fetchToday(), fetchAll(), fetchProfile()]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markAsTaken = async (medicineId) => {
+    try {
+      setTakingId(medicineId);
+      const res = await fetch(`http://localhost:8080/api/medicine/take/${medicineId}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
+      if (!res.ok) return;
+      await fetchToday();
+    } finally {
+      setTakingId(null);
     }
   };
 
@@ -281,16 +337,20 @@ export default function Medicines() {
         <div className="med-header">
           <div>
             <h2 className="med-page-title">Medicines</h2>
-            <p className="med-page-sub">Manage your daily medication</p>
+            <p className="med-page-sub">
+              {isElderly ? "Track your medicines and mark them as taken" : "Manage your daily medication"}
+            </p>
           </div>
-          <button className="med-add-btn" onClick={() => { setEditing(null); setShowForm(true); }}>
-            <FaPlus /> Add Medicine
-          </button>
+          {!isElderly && (
+            <button className="med-add-btn" onClick={() => { setEditing(null); setShowForm(true); }}>
+              <FaPlus /> Add Medicine
+            </button>
+          )}
         </div>
 
         {/* ── Tab switcher ── */}
         <div className="med-tabs">
-          {["today", "calendar"].map(tab => (
+          {["today", ...(!isElderly ? ["calendar"] : [])].map(tab => (
             <button
               key={tab}
               className={`med-tab ${activeTab === tab ? "med-tab--on" : ""}`}
@@ -339,6 +399,9 @@ export default function Medicines() {
                       ? <p className="med-section-empty">No due medicines</p>
                       : filterLogs(due).map(log => (
                         <MedCard key={log.id} log={log} status="due"
+                          isElderly={isElderly}
+                          onTake={markAsTaken}
+                          takingId={takingId}
                           onEdit={l => { setEditing(l.medicine || l); setShowForm(true); }}
                           onDelete={deleteMedicine}
                         />
@@ -359,6 +422,9 @@ export default function Medicines() {
                       ? <p className="med-section-empty">No upcoming medicines</p>
                       : filterLogs(upcoming).map(log => (
                         <MedCard key={log.id} log={log} status="upcoming"
+                          isElderly={isElderly}
+                          onTake={markAsTaken}
+                          takingId={takingId}
                           onEdit={l => { setEditing(l.medicine || l); setShowForm(true); }}
                           onDelete={deleteMedicine}
                         />
@@ -379,6 +445,9 @@ export default function Medicines() {
                       ? <p className="med-section-empty">None taken yet</p>
                       : filterLogs(completed).map(log => (
                         <MedCard key={log.id} log={log} status="completed"
+                          isElderly={isElderly}
+                          onTake={markAsTaken}
+                          takingId={takingId}
                           onEdit={l => { setEditing(l.medicine || l); setShowForm(true); }}
                           onDelete={deleteMedicine}
                         />
@@ -393,7 +462,7 @@ export default function Medicines() {
         )}
 
         {/* ── CALENDAR TAB ── */}
-        {activeTab === "calendar" && (
+        {!isElderly && activeTab === "calendar" && (
           <div className="cal-layout">
             <MiniCalendar
               medicines={allMeds}
@@ -405,7 +474,7 @@ export default function Medicines() {
         )}
 
         {/* ── Form modal ── */}
-        {showForm && (
+        {!isElderly && showForm && (
           <AddMedicineForm
             close={() => { setShowForm(false); setEditing(null); }}
             fetchMedicines={fetchAllData}

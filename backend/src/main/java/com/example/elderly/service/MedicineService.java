@@ -2,6 +2,7 @@ package com.example.elderly.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,23 +37,26 @@ public class MedicineService {
 
     // ── ADD ──────────────────────────────────────────────
 
-    public Medicine addMedicine(String email, AddMedicineRequest request) {
+    public List<Medicine> addMedicine(String email, AddMedicineRequest request) {
         User user = getUser(email);
-        Medicine medicine = new Medicine();
-        medicine.setUser(user);
-        medicine.setName(request.getName());
-        medicine.setDosage(request.getDosage());
-        medicine.setTime(LocalTime.parse(request.getTime()));
-        medicine.setDate(LocalDate.now());
-        medicine.setBreakfastTiming(orNone(request.getBreakfastTiming()));
-        medicine.setLunchTiming(orNone(request.getLunchTiming()));
-        medicine.setDinnerTiming(orNone(request.getDinnerTiming()));
-        medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
-        medicine.setStartDate(
-            request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : LocalDate.now()
-        );
-        medicine.setNotes(request.getNotes());
-        return medicineRepository.save(medicine);
+        LocalDate startDate = request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : LocalDate.now();
+        List<ScheduleSelection> selections = getSelectedSchedules(request);
+
+        return selections.stream().map(selection -> {
+            Medicine medicine = new Medicine();
+            medicine.setUser(user);
+            medicine.setName(request.getName().trim());
+            medicine.setDosage(request.getDosage().trim());
+            medicine.setTime(selection.time());
+            medicine.setDate(LocalDate.now());
+            medicine.setBreakfastTiming(selection.meal().equals("breakfast") ? selection.timing() : MealTiming.NONE);
+            medicine.setLunchTiming(selection.meal().equals("lunch") ? selection.timing() : MealTiming.NONE);
+            medicine.setDinnerTiming(selection.meal().equals("dinner") ? selection.timing() : MealTiming.NONE);
+            medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
+            medicine.setStartDate(startDate);
+            medicine.setNotes(request.getNotes());
+            return medicineRepository.save(medicine);
+        }).toList();
     }
 
     // ── GET TODAY (with per-day taken log) ───────────────
@@ -120,12 +124,19 @@ public class MedicineService {
         if (!medicine.getUser().getEmail().equals(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot update this medicine");
         }
-        medicine.setName(request.getName());
-        medicine.setDosage(request.getDosage());
-        medicine.setTime(LocalTime.parse(request.getTime()));
-        medicine.setBreakfastTiming(orNone(request.getBreakfastTiming()));
-        medicine.setLunchTiming(orNone(request.getLunchTiming()));
-        medicine.setDinnerTiming(orNone(request.getDinnerTiming()));
+        List<ScheduleSelection> selections = getSelectedSchedules(request);
+        if (selections.size() != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Edit one medicine slot at a time");
+        }
+
+        ScheduleSelection selection = selections.getFirst();
+
+        medicine.setName(request.getName().trim());
+        medicine.setDosage(request.getDosage().trim());
+        medicine.setTime(selection.time());
+        medicine.setBreakfastTiming(selection.meal().equals("breakfast") ? selection.timing() : MealTiming.NONE);
+        medicine.setLunchTiming(selection.meal().equals("lunch") ? selection.timing() : MealTiming.NONE);
+        medicine.setDinnerTiming(selection.meal().equals("dinner") ? selection.timing() : MealTiming.NONE);
         medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
         medicine.setStartDate(
             request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : medicine.getStartDate()
@@ -149,4 +160,36 @@ public class MedicineService {
     private MealTiming orNone(MealTiming value) {
         return value != null ? value : MealTiming.NONE;
     }
+
+    private List<ScheduleSelection> getSelectedSchedules(AddMedicineRequest request) {
+        List<ScheduleSelection> selections = new ArrayList<>();
+        addSelection(selections, "breakfast", request.getBreakfastTiming(), request.getBreakfastTime());
+        addSelection(selections, "lunch", request.getLunchTiming(), request.getLunchTime());
+        addSelection(selections, "dinner", request.getDinnerTiming(), request.getDinnerTime());
+
+        if (selections.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select at least one meal slot");
+        }
+
+        return selections;
+    }
+
+    private void addSelection(List<ScheduleSelection> selections, String meal, MealTiming timing, String timeValue) {
+        MealTiming normalized = orNone(timing);
+        if (normalized == MealTiming.NONE) {
+            return;
+        }
+
+        if (timeValue == null || timeValue.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select a time for " + meal);
+        }
+
+        try {
+            selections.add(new ScheduleSelection(meal, normalized, LocalTime.parse(timeValue.trim())));
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time for " + meal + " must be in HH:mm format");
+        }
+    }
+
+    private record ScheduleSelection(String meal, MealTiming timing, LocalTime time) {}
 }

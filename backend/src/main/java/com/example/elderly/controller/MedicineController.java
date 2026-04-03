@@ -1,6 +1,7 @@
 package com.example.elderly.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,7 @@ public class MedicineController {
 
     // Add medicine
     @PostMapping
+    @PreAuthorize("hasRole('CAREGIVER')")
     public ResponseEntity<?> addMedicine(@Valid @RequestBody AddMedicineRequest request) {
         return ResponseEntity.status(201).body(medicineService.addMedicine(getEmail(), request));
     }
@@ -62,6 +64,7 @@ public class MedicineController {
 
     // Update medicine
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('CAREGIVER')")
     public ResponseEntity<?> updateMedicine(
             @PathVariable String id,
             @Valid @RequestBody AddMedicineRequest request) {
@@ -70,6 +73,7 @@ public class MedicineController {
 
     // Delete medicine
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('CAREGIVER')")
     public ResponseEntity<?> deleteMedicine(@PathVariable String id) {
         medicineService.deleteMedicine(id, getEmail());
         return ResponseEntity.noContent().build();

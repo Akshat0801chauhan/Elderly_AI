@@ -7,16 +7,38 @@ import {
 } from "react-icons/fa";
 import "./Profile.css";
 
-function Field({ label, icon: Icon, field, readOnly, editing, formData, profile, setFormData }) {
+const GENDER_OPTIONS = ["Male", "Female", "Other"];
+const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+function Field({
+  label, icon: Icon, field, readOnly, editing, formData, profile, setFormData, type = "text", options = [], max,
+}) {
+  const currentValue = formData[field] || "";
+
   return (
     <div className="pf-field">
       <p className="pf-field-label"><Icon className="pf-field-icon" /> {label}</p>
       {editing && !readOnly ? (
-        <input
-          className="pf-field-input"
-          value={formData[field] || ""}
-          onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))}
-        />
+        type === "select" ? (
+          <select
+            className="pf-field-input"
+            value={currentValue}
+            onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))}
+          >
+            <option value="">Select {label}</option>
+            {options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="pf-field-input"
+            type={type}
+            max={max}
+            value={currentValue}
+            onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))}
+          />
+        )
       ) : (
         <p className="pf-field-value">{profile[field] || "-"}</p>
       )}
@@ -33,6 +55,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("general");
 
   const token = localStorage.getItem("token");
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -57,6 +80,27 @@ export default function Profile() {
   const handleSave = async () => {
     try {
       setError("");
+      const isElderlyUser = profile.role === "ELDERLY";
+
+      if (isElderlyUser) {
+        if (!formData.dateOfBirth) {
+          setError("Date of birth is required for elderly users");
+          return;
+        }
+        if (formData.dateOfBirth > today) {
+          setError("Date of birth cannot be in the future");
+          return;
+        }
+        if (!formData.gender) {
+          setError("Gender is required for elderly users");
+          return;
+        }
+        if (!formData.bloodType) {
+          setError("Blood group is required for elderly users");
+          return;
+        }
+      }
+
       const payload = {
         name: formData.name,
         phone: formData.phone,
@@ -188,10 +232,30 @@ export default function Profile() {
                 <Field label="Phone" icon={FaPhone} field="phone" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 <Field label="Role" icon={FaShieldAlt} field="role" readOnly editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 {isElderly && (
-                  <Field label="Date of Birth" icon={FaCalendarAlt} field="dateOfBirth" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                  <Field
+                    label="Date of Birth"
+                    icon={FaCalendarAlt}
+                    field="dateOfBirth"
+                    type="date"
+                    max={today}
+                    editing={editing}
+                    formData={formData}
+                    profile={profile}
+                    setFormData={setFormData}
+                  />
                 )}
                 {isElderly && (
-                  <Field label="Gender" icon={FaVenusMars} field="gender" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                  <Field
+                    label="Gender"
+                    icon={FaVenusMars}
+                    field="gender"
+                    type="select"
+                    options={GENDER_OPTIONS}
+                    editing={editing}
+                    formData={formData}
+                    profile={profile}
+                    setFormData={setFormData}
+                  />
                 )}
               </div>
 
@@ -219,7 +283,17 @@ export default function Profile() {
                 {editing && <span className="pf-editing-badge">Editing</span>}
               </div>
               <div className="pf-grid">
-                <Field label="Blood Type" icon={FaTint} field="bloodType" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
+                <Field
+                  label="Blood Group"
+                  icon={FaTint}
+                  field="bloodType"
+                  type="select"
+                  options={BLOOD_GROUP_OPTIONS}
+                  editing={editing}
+                  formData={formData}
+                  profile={profile}
+                  setFormData={setFormData}
+                />
                 <Field label="Allergies" icon={FaShieldAlt} field="allergies" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 <Field label="Chronic Diseases" icon={FaUser} field="chronicDiseases" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />
                 <Field label="Past Illnesses" icon={FaCalendarAlt} field="pastIllnesses" editing={editing} formData={formData} profile={profile} setFormData={setFormData} />

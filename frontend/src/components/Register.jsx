@@ -13,6 +13,7 @@ const initialHealthFields = {
 
 export default function Register() {
   const navigate = useNavigate();
+  const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
     name: "",
@@ -82,6 +83,8 @@ export default function Register() {
     if (isElderly) {
       if (!form.dateOfBirth) {
         newErrors.dateOfBirth = "Date of birth is required for elderly users";
+      } else if (form.dateOfBirth > today) {
+        newErrors.dateOfBirth = "Date of birth cannot be in the future";
       }
       if (!form.gender) {
         newErrors.gender = "Gender is required for elderly users";
@@ -125,7 +128,10 @@ export default function Register() {
         navigate("/");
       } else {
         const data = await res.json().catch(() => null);
-        setErrors({ api: data?.message || "Registration failed" });
+        setErrors({
+          ...(data?.errors || {}),
+          api: data?.message || "Registration failed",
+        });
       }
     } catch {
       setErrors({ api: "Server error" });
@@ -201,6 +207,7 @@ export default function Register() {
                 id="dateOfBirth"
                 className="register-date-input"
                 type="date"
+                max={today}
                 value={form.dateOfBirth}
                 onChange={(e) => updateField("dateOfBirth", e.target.value)}
               />

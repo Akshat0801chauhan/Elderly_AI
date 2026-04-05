@@ -39,12 +39,16 @@ public class MedicineService {
 
     public List<Medicine> addMedicine(String email, AddMedicineRequest request) {
         User user = getUser(email);
+        return addMedicineForElderly(user, request);
+    }
+
+    public List<Medicine> addMedicineForElderly(User elderly, AddMedicineRequest request) {
         LocalDate startDate = request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : LocalDate.now();
         List<ScheduleSelection> selections = getSelectedSchedules(request);
 
         return selections.stream().map(selection -> {
             Medicine medicine = new Medicine();
-            medicine.setUser(user);
+            medicine.setUser(elderly);
             medicine.setName(request.getName().trim());
             medicine.setDosage(request.getDosage().trim());
             medicine.setTime(selection.time());
@@ -83,6 +87,10 @@ public class MedicineService {
     public List<Medicine> getAllMedicines(String email) {
         User user = getUser(email);
         return medicineRepository.findByUser(user);
+    }
+
+    public List<Medicine> getAllMedicinesForElderly(User elderly) {
+        return medicineRepository.findByUser(elderly);
     }
 
     // ── MARK TAKEN ───────────────────────────────────────
@@ -145,7 +153,36 @@ public class MedicineService {
         return medicineRepository.save(medicine);
     }
 
-    // ── DELETE ────────────────────────────────────────────
+    public Medicine updateMedicineForElderly(String medicineId, User elderly, AddMedicineRequest request) {
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+
+        if (!medicine.getUser().getId().equals(elderly.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "This medicine does not belong to the selected elderly user");
+        }
+
+        List<ScheduleSelection> selections = getSelectedSchedules(request);
+        if (selections.size() != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Edit one medicine slot at a time");
+        }
+
+        ScheduleSelection selection = selections.getFirst();
+
+        medicine.setName(request.getName().trim());
+        medicine.setDosage(request.getDosage().trim());
+        medicine.setTime(selection.time());
+        medicine.setBreakfastTiming(selection.meal().equals("breakfast") ? selection.timing() : MealTiming.NONE);
+        medicine.setLunchTiming(selection.meal().equals("lunch") ? selection.timing() : MealTiming.NONE);
+        medicine.setDinnerTiming(selection.meal().equals("dinner") ? selection.timing() : MealTiming.NONE);
+        medicine.setNumberOfDays(request.getNumberOfDays() != null ? request.getNumberOfDays() : 1);
+        medicine.setStartDate(
+                request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : medicine.getStartDate());
+        medicine.setNotes(request.getNotes());
+        return medicineRepository.save(medicine);
+    }
+
+    //delete
 
     @Transactional
     public void deleteMedicine(String id, String email) {
@@ -153,6 +190,20 @@ public class MedicineService {
                 .orElseThrow(() -> new RuntimeException("Medicine not found"));
         if (!medicine.getUser().getEmail().equals(email)) throw new RuntimeException("Unauthorized");
         // delete all taken logs for this medicine first
+        takenLogRepository.findAllByMedicine(medicine).forEach(takenLogRepository::delete);
+        medicineRepository.delete(medicine);
+    }
+
+    @Transactional
+    public void deleteMedicineForElderly(String medicineId, User elderly) {
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+
+        if (!medicine.getUser().getId().equals(elderly.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "This medicine does not belong to the selected elderly user");
+        }
+
         takenLogRepository.findAllByMedicine(medicine).forEach(takenLogRepository::delete);
         medicineRepository.delete(medicine);
     }

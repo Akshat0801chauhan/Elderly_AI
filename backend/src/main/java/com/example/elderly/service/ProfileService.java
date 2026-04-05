@@ -150,4 +150,36 @@ private void validateDateOfBirth(String value) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date of birth must be a valid date");
     }
 }
+public ProfileResponse getProfileForElderly(User elderly) {
+    return new ProfileResponse(
+            elderly.getName(),
+            elderly.getEmail(),
+            elderly.getRole().name(),
+            elderly.getPhone(),
+            elderly.getAddress(),
+            elderly.getImageUrl(),
+            elderly.getDateOfBirth(),
+            elderly.getGender(),
+            getHealthField(elderly, elderly.getBloodType()),
+            getHealthField(elderly, elderly.getAllergies()),
+            getHealthField(elderly, elderly.getChronicDiseases()),
+            getHealthField(elderly, elderly.getPastIllnesses())
+    );
+}
+
+public String updateProfileForElderly(User elderly, UpdateProfileRequest request) {
+    validateProfileRequest(elderly, request);
+
+    elderly.setName(request.getName().trim());
+    elderly.setPhone(request.getPhone().trim());
+    elderly.setAddress(request.getAddress().trim());
+    elderly.setImageUrl(trimToNull(request.getImageUrl()));
+    elderly.setDateOfBirth(trimToNull(request.getDateOfBirth()));
+    elderly.setGender(trimToNull(request.getGender()));
+    applyHealthFields(elderly, request);
+
+    userRepository.save(elderly);
+    return "Profile updated successfully";
+}
+
 }

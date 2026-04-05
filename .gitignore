@@ -29,6 +29,14 @@ backend/src/main/resources/application.properties
 !backend/**/src/test/**/target/
 
 # =========================
+# AI SERVICE (Python)
+# =========================
+ai-service/__pycache__/
+ai-service/**/*.py[cod]
+ai-service/data/encodings/*
+!ai-service/data/encodings/.gitkeep
+
+# =========================
 # IDE FILES
 # =========================
 

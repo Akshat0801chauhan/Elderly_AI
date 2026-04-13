@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.elderly.dto.AddMedicineRequest;
@@ -137,7 +137,7 @@ public class MedicineService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Edit one medicine slot at a time");
         }
 
-        ScheduleSelection selection = selections.getFirst();
+        ScheduleSelection selection = selections.get(0);
 
         medicine.setName(request.getName().trim());
         medicine.setDosage(request.getDosage().trim());
@@ -167,7 +167,7 @@ public class MedicineService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Edit one medicine slot at a time");
         }
 
-        ScheduleSelection selection = selections.getFirst();
+        ScheduleSelection selection = selections.get(0);
 
         medicine.setName(request.getName().trim());
         medicine.setDosage(request.getDosage().trim());

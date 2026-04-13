@@ -1,13 +1,16 @@
+from pathlib import Path
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from models.face_store import FaceStore
-from services.face_encode import encode_face_image
+from services.face_encode import detect_face_embeddings, encode_face_image
 from services.face_match import FaceMatcher
 from utils.config import get_settings
 
 
 settings = get_settings()
-store = FaceStore(settings.encodings_dir)
+store = FaceStore(settings.encodings_dir, settings.images_dir)
 matcher = FaceMatcher(store, threshold=settings.match_threshold)
 
 app = FastAPI(
@@ -25,52 +28,101 @@ def health_check() -> dict:
 @app.post("/enroll")
 async def enroll_face(
     name: str = Form(...),
+    relation: str | None = Form(None),
     image: UploadFile = File(...),
 ) -> dict:
     normalized_name = name.strip()
     if not normalized_name:
         raise HTTPException(status_code=400, detail="Name is required.")
 
+    image_bytes = await image.read()
+    await image.seek(0)
+
     try:
         encoding = await encode_face_image(image, require_single_face=True)
-    except ValueError as exc:
+    except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    store.save_face(normalized_name, encoding)
+    suffix = Path(image.filename or "upload.jpg").suffix or ".jpg"
+    normalized_relation = relation.strip() if relation else None
+    store.save_face(normalized_name, encoding, image_bytes, suffix, normalized_relation)
     return {
         "message": f"Face enrolled successfully for {normalized_name}.",
         "name": normalized_name,
+        "relation": normalized_relation,
     }
 
 
 @app.post("/recognize")
 async def recognize_face(image: UploadFile = File(...)) -> dict:
     try:
-        encoding = await encode_face_image(image)
-    except ValueError as exc:
+        detected_faces = await detect_face_embeddings(image)
+    except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    match = matcher.find_best_match(encoding)
-    if match is None:
+    if not detected_faces:
+        raise HTTPException(status_code=400, detail="No face detected in the image.")
+
+    matches = matcher.find_matches([face.embedding for face in detected_faces])
+    if not matches:
         return {
             "recognized": False,
-            "message": "Face not found. Do you want to add this face?",
+            "message": "No saved faces were recognized in the image.",
             "name": None,
+            "matches": [],
+            "detected_faces": len(detected_faces),
             "suggest_enroll": True,
         }
 
+    best_match = max(matches, key=lambda match: match["similarity"])
     return {
         "recognized": True,
-        "message": f"Recognized {match['name']}.",
-        "name": match["name"],
-        "distance": round(match["distance"], 4),
+        "message": f"Recognized {best_match['name']} in the image.",
+        "name": best_match["name"],
+        "similarity": round(best_match["similarity"], 4),
+        "detected_faces": len(detected_faces),
+        "matches": [
+            {
+                "face_index": match["face_index"],
+                "name": match["name"],
+                "similarity": round(match["similarity"], 4),
+                "bbox": detected_faces[match["face_index"]].bbox,
+                "detection_score": round(
+                    detected_faces[match["face_index"]].detection_score,
+                    4,
+                ),
+            }
+            for match in matches
+        ],
         "suggest_enroll": False,
     }
 
 
 @app.get("/faces")
 def list_faces() -> dict:
-    return {"faces": store.list_faces()}
+    faces = []
+    for face in store.list_faces():
+        faces.append(
+            {
+                "name": face["name"],
+                "slug": face["slug"],
+                "relation": face.get("relation"),
+                "image_url": (
+                    f"http://127.0.0.1:8000/faces/{face['slug']}/image"
+                    if face.get("image_path")
+                    else None
+                ),
+            }
+        )
+    return {"faces": faces}
+
+
+@app.get("/faces/{face_slug}/image")
+def get_face_image(face_slug: str):
+    image_path = store.get_face_image_path(face_slug)
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="Face image not found.")
+    return FileResponse(image_path)
 
 
 if __name__ == "__main__":

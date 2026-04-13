@@ -4,8 +4,10 @@ import Layout from "./Layout";
 import { useNavigate } from "react-router-dom";
 import {
   FaPills, FaCheck, FaExclamationCircle, FaClock, FaArrowRight,
-  FaTint, FaWalking, FaRobot, FaUtensils
+  FaTint, FaWalking, FaRobot, FaUtensils, FaCamera, FaUserCheck, FaSearch, FaShieldAlt
 } from "react-icons/fa";
+
+const API_BASE_URL = "http://localhost:8080";
 
 function parseTimeToday(timeStr) {
   if (!timeStr) return null;
@@ -71,8 +73,77 @@ export default function Dashboard() {
   const [role, setRole] = useState("");
   const [profileName, setProfileName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [faceFile, setFaceFile] = useState(null);
+  const [facePreviewUrl, setFacePreviewUrl] = useState("");
+  const [faceServiceStatus, setFaceServiceStatus] = useState("checking");
+  const [knownFaces, setKnownFaces] = useState([]);
+  const [faceAction, setFaceAction] = useState("");
+  const [faceError, setFaceError] = useState("");
+  const [faceResult, setFaceResult] = useState(null);
+  const [selectedSavedFace, setSelectedSavedFace] = useState(null);
+  const [faceName, setFaceName] = useState("");
+  const [faceRelation, setFaceRelation] = useState("");
+  const [savedFaceImages, setSavedFaceImages] = useState({});
   const navigate = useNavigate();
   const hasFetched = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (facePreviewUrl) {
+        URL.revokeObjectURL(facePreviewUrl);
+      }
+      Object.values(savedFaceImages).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [facePreviewUrl, savedFaceImages]);
+
+  const loadFaceData = async (token) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const [healthRes, facesRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/ai/face/health`, { headers }),
+        fetch(`${API_BASE_URL}/api/ai/face/faces`, { headers }),
+      ]);
+
+      setFaceServiceStatus(healthRes.ok ? "online" : "offline");
+
+      if (facesRes.ok) {
+        const facesData = await facesRes.json();
+        const faces = Array.isArray(facesData?.faces) ? facesData.faces : [];
+        setKnownFaces(faces);
+        await preloadFaceImages(token, faces);
+      } else {
+        setKnownFaces([]);
+        setSavedFaceImages({});
+      }
+    } catch (err) {
+      console.error(err);
+      setFaceServiceStatus("offline");
+      setKnownFaces([]);
+      setSavedFaceImages({});
+    }
+  };
+
+  const preloadFaceImages = async (token, faces) => {
+    const nextImages = {};
+    for (const face of faces) {
+      if (!face.imageUrl || !face.slug) continue;
+      try {
+        const res = await fetch(`${API_BASE_URL}${face.imageUrl}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        nextImages[face.slug] = URL.createObjectURL(blob);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    setSavedFaceImages((prev) => {
+      Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      return nextImages;
+    });
+  };
 
   const fetchData = async () => {
     try {
@@ -83,10 +154,10 @@ export default function Dashboard() {
       }
 
       const [medRes, profileRes] = await Promise.all([
-        fetch("http://localhost:8080/api/medicine", {
+        fetch(`${API_BASE_URL}/api/medicine`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:8080/api/profile", {
+        fetch(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -113,11 +184,16 @@ export default function Dashboard() {
       setLogs(medText ? JSON.parse(medText) : []);
       setRole(profileData?.role || "");
       setProfileName(profileData?.name || "");
+      setFaceName("");
+      setFaceRelation("");
+      await loadFaceData(token);
     } catch (err) {
       console.error(err);
       setLogs([]);
       setRole("");
       setProfileName("");
+      setFaceServiceStatus("offline");
+      setKnownFaces([]);
     } finally {
       setLoading(false);
     }
@@ -149,6 +225,12 @@ export default function Dashboard() {
   };
 
   const firstName = profileName.trim().split(" ").filter(Boolean)[0];
+  const faceStatusLabel = faceServiceStatus === "online"
+    ? "Ready"
+    : faceServiceStatus === "checking"
+      ? "Checking"
+      : "Not available";
+  const faceStatusTone = faceServiceStatus === "online" ? "ok" : faceServiceStatus === "checking" ? "checking" : "offline";
 
   const companionTitle = () => {
     if (due.length > 0) return "A few medicines need your attention";
@@ -191,6 +273,98 @@ export default function Dashboard() {
       text: "A short walk or a few light stretches can add comfort and energy to the day.",
     },
   ];
+
+  const handleFaceFileChange = (event) => {
+    const file = event.target.files?.[0];
+    setFaceError("");
+    setFaceResult(null);
+
+    if (!file) {
+      setFaceFile(null);
+      if (facePreviewUrl) {
+        URL.revokeObjectURL(facePreviewUrl);
+      }
+      setFacePreviewUrl("");
+      return;
+    }
+
+    if (facePreviewUrl) {
+      URL.revokeObjectURL(facePreviewUrl);
+    }
+
+    setFaceFile(file);
+    setFacePreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleFaceAction = async (action) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    if (!faceFile) {
+      setFaceError("Please choose an image first.");
+      return;
+    }
+
+    if (action === "enroll" && !faceName.trim()) {
+      setFaceError("Please enter the person's name before saving the photo.");
+      return;
+    }
+
+    setFaceAction(action);
+    setFaceError("");
+    setFaceResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", faceFile);
+
+      if (action === "enroll" && faceName.trim()) {
+        formData.append("name", faceName.trim());
+      }
+
+      if (action === "enroll" && faceRelation.trim()) {
+        formData.append("relation", faceRelation.trim());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/ai/face/${action}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const rawText = await response.text();
+      const data = rawText ? JSON.parse(rawText) : {};
+
+      if (!response.ok) {
+        throw new Error(data?.detail || data?.error || data?.message || "Unable to complete the AI request.");
+      }
+
+      setFaceResult({
+        mode: action,
+        ...data,
+      });
+
+      if (action === "enroll") {
+        await loadFaceData(token);
+        setFaceName("");
+        setFaceRelation("");
+        setFaceFile(null);
+        if (facePreviewUrl) {
+          URL.revokeObjectURL(facePreviewUrl);
+        }
+        setFacePreviewUrl("");
+      }
+    } catch (err) {
+      console.error(err);
+      setFaceError(err.message || "Unable to complete the AI request.");
+    } finally {
+      setFaceAction("");
+    }
+  };
 
   return (
     <Layout>
@@ -340,6 +514,169 @@ export default function Dashboard() {
                 <button className="dash-manage-btn" onClick={() => navigate("/medicines")}>
                   <FaPills /> {isElderly ? "Open medicines" : "Manage all medicines"} <FaArrowRight />
                 </button>
+
+                <div className="dash-face-card">
+                  <div className="dash-face-header">
+                    <div>
+                      <p className="dash-card-title">Photo Helper</p>
+                      <h3 className="dash-face-heading">Save a face photo and identify people later</h3>
+                      <p className="dash-face-subtext">
+                        Choose a clear face photo. You can save someone once, then use another photo to check who it is.
+                      </p>
+                    </div>
+                    <span className={`dash-face-status dash-face-status--${faceStatusTone}`}>
+                      <FaShieldAlt /> {faceStatusLabel}
+                    </span>
+                  </div>
+
+                  <div className="dash-face-grid">
+                    <div className="dash-face-upload">
+                      <div className="dash-face-field">
+                        <label htmlFor="faceName" className="dash-face-field-label">Name</label>
+                        <input
+                          id="faceName"
+                          className="dash-face-input"
+                          type="text"
+                          placeholder="Enter person's name"
+                          value={faceName}
+                          onChange={(event) => setFaceName(event.target.value)}
+                        />
+                      </div>
+
+                      <div className="dash-face-field">
+                        <label htmlFor="faceRelation" className="dash-face-field-label">Relation (optional)</label>
+                        <input
+                          id="faceRelation"
+                          className="dash-face-input"
+                          type="text"
+                          placeholder="Son, daughter, grandson..."
+                          value={faceRelation}
+                          onChange={(event) => setFaceRelation(event.target.value)}
+                        />
+                      </div>
+
+                      <label className="dash-face-dropzone">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFaceFileChange}
+                        />
+                        {facePreviewUrl ? (
+                          <img src={facePreviewUrl} alt="Selected face preview" className="dash-face-preview" />
+                        ) : (
+                          <div className="dash-face-placeholder">
+                            <FaCamera />
+                            <p>Choose a photo</p>
+                            <span>Use a clear photo where the face is easy to see</span>
+                          </div>
+                        )}
+                      </label>
+
+                      <div className="dash-face-actions">
+                        <button
+                          className="dash-face-btn dash-face-btn--primary"
+                          onClick={() => handleFaceAction("enroll")}
+                          disabled={!faceFile || !faceName.trim() || !!faceAction || faceServiceStatus !== "online"}
+                        >
+                          <FaUserCheck />
+                          {faceAction === "enroll" ? "Saving..." : "Save photo"}
+                        </button>
+                        <button
+                          className="dash-face-btn dash-face-btn--secondary"
+                          onClick={() => handleFaceAction("recognize")}
+                          disabled={!faceFile || !!faceAction || faceServiceStatus !== "online"}
+                        >
+                          <FaSearch />
+                          {faceAction === "recognize" ? "Checking..." : "Identify person"}
+                        </button>
+                      </div>
+
+                      {faceError && <p className="dash-face-error">{faceError}</p>}
+                    </div>
+
+                    <div className="dash-face-info">
+                      <div className="dash-face-panel">
+                        <p className="dash-face-panel-title">Saved people</p>
+                        {knownFaces.length > 0 ? (
+                          <div className="dash-face-gallery">
+                            {knownFaces.map((face) => (
+                              <button
+                                key={face.slug || face.name}
+                                type="button"
+                                className="dash-face-saved-card"
+                                onClick={() => setSelectedSavedFace(face)}
+                              >
+                                {face.imageUrl ? (
+                                  <img
+                                    src={savedFaceImages[face.slug] || ""}
+                                    alt={face.name}
+                                    className="dash-face-saved-thumb"
+                                  />
+                                ) : (
+                                  <div className="dash-face-saved-fallback">
+                                    <FaUserCheck />
+                                    <span>No photo yet</span>
+                                  </div>
+                                )}
+                                <span className="dash-face-tag">{face.name || "Unknown"}</span>
+                                {face.relation && (
+                                  <span className="dash-face-relation">{face.relation}</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="dash-face-muted">
+                            {faceServiceStatus === "online"
+                              ? "No saved people yet."
+                              : "Start the face service to see saved people."}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="dash-face-panel">
+                        <p className="dash-face-panel-title">Last result</p>
+                        {faceResult ? (
+                          <div className="dash-face-result">
+                            <p className="dash-face-result-message">{faceResult.message}</p>
+                            {faceResult.mode === "recognize" && (
+                              <>
+                                <div className="dash-face-result-row">
+                                  <span>Status</span>
+                                  <strong>{faceResult.recognized ? "Recognized" : "Not recognized"}</strong>
+                                </div>
+                                <div className="dash-face-result-row">
+                                  <span>Name</span>
+                                  <strong>{faceResult.name || "No match"}</strong>
+                                </div>
+                                <div className="dash-face-result-row">
+                                  <span>Detected faces</span>
+                                  <strong>{faceResult.detected_faces ?? 0}</strong>
+                                </div>
+                                {typeof faceResult.similarity === "number" && (
+                                  <div className="dash-face-result-row">
+                                    <span>Similarity</span>
+                                    <strong>{Math.round(faceResult.similarity * 100)}%</strong>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {faceResult.mode === "enroll" && (
+                              <div className="dash-face-result-row">
+                                <span>Enrolled as</span>
+                                <strong>{faceResult.name}</strong>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="dash-face-muted">
+                            Add a photo, then save it or check who is in the picture.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -402,6 +739,44 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {selectedSavedFace && (
+        <div className="dash-face-modal-backdrop" onClick={() => setSelectedSavedFace(null)}>
+          <div className="dash-face-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="dash-face-modal-header">
+              <div>
+                <p className="dash-card-title">Saved Face Preview</p>
+                <h3 className="dash-face-modal-title">{selectedSavedFace.name}</h3>
+              </div>
+              <button
+                type="button"
+                className="dash-face-modal-close"
+                onClick={() => setSelectedSavedFace(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            {selectedSavedFace.imageUrl && savedFaceImages[selectedSavedFace.slug] ? (
+              <img
+                src={savedFaceImages[selectedSavedFace.slug]}
+                alt={selectedSavedFace.name}
+                className="dash-face-modal-image"
+              />
+            ) : (
+              <p className="dash-face-muted">
+                This person was saved without a photo preview. Save their photo again once to show the face here.
+              </p>
+            )}
+
+            {selectedSavedFace.relation && (
+              <p className="dash-face-modal-relation">
+                Relation: <strong>{selectedSavedFace.relation}</strong>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

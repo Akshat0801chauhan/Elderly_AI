@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [faceError, setFaceError] = useState("");
   const [faceResult, setFaceResult] = useState(null);
   const [selectedSavedFace, setSelectedSavedFace] = useState(null);
+  const [recognitionPopup, setRecognitionPopup] = useState(null);
   const [faceName, setFaceName] = useState("");
   const [faceRelation, setFaceRelation] = useState("");
   const [savedFaceImages, setSavedFaceImages] = useState({});
@@ -357,6 +358,16 @@ export default function Dashboard() {
           URL.revokeObjectURL(facePreviewUrl);
         }
         setFacePreviewUrl("");
+      } else if (action === "recognize" && data?.recognized && data?.name) {
+        const matchedFace = knownFaces.find(
+          (face) => (face.name || "").toLowerCase() === data.name.toLowerCase()
+        );
+        setRecognitionPopup({
+          name: data.name,
+          relation: matchedFace?.relation || "",
+          slug: matchedFace?.slug || "",
+          imageUrl: matchedFace?.imageUrl || "",
+        });
       }
     } catch (err) {
       console.error(err);
@@ -653,12 +664,6 @@ export default function Dashboard() {
                                   <span>Detected faces</span>
                                   <strong>{faceResult.detected_faces ?? 0}</strong>
                                 </div>
-                                {typeof faceResult.similarity === "number" && (
-                                  <div className="dash-face-result-row">
-                                    <span>Similarity</span>
-                                    <strong>{Math.round(faceResult.similarity * 100)}%</strong>
-                                  </div>
-                                )}
                               </>
                             )}
                             {faceResult.mode === "enroll" && (
@@ -774,6 +779,53 @@ export default function Dashboard() {
                 Relation: <strong>{selectedSavedFace.relation}</strong>
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {recognitionPopup && (
+        <div className="dash-face-popup-backdrop" onClick={() => setRecognitionPopup(null)}>
+          <div className="dash-face-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="dash-face-popup-header">
+              <p className="dash-card-title">Person Matched</p>
+              <button
+                type="button"
+                className="dash-face-modal-close"
+                onClick={() => setRecognitionPopup(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="dash-face-popup-body">
+              <div className="dash-face-popup-photo">
+                {recognitionPopup.imageUrl && savedFaceImages[recognitionPopup.slug] ? (
+                  <img
+                    src={savedFaceImages[recognitionPopup.slug]}
+                    alt={recognitionPopup.name}
+                  />
+                ) : (
+                  <div className="dash-face-popup-fallback">
+                    <FaUserCheck />
+                  </div>
+                )}
+              </div>
+              <div className="dash-face-popup-info">
+                <h3>{recognitionPopup.name}</h3>
+                {recognitionPopup.relation && (
+                  <p className="dash-face-popup-relation">
+                    Relation: <strong>{recognitionPopup.relation}</strong>
+                  </p>
+                )}
+                {!recognitionPopup.relation && (
+                  <p className="dash-face-popup-relation">
+                    Relation: <strong>Not provided</strong>
+                  </p>
+                )}
+                <p className="dash-face-popup-note">
+                  This person was matched with the photo you uploaded.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

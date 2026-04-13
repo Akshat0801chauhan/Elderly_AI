@@ -6,6 +6,12 @@ import {
   FaPills, FaCheck, FaExclamationCircle, FaClock, FaArrowRight,
   FaTint, FaWalking, FaRobot, FaUtensils, FaCamera, FaUserCheck, FaSearch, FaShieldAlt
 } from "react-icons/fa";
+import {
+  buildCaregiverEndpoint,
+  clearSelectedElderlyUser,
+  getSelectedElderlyUser,
+  setSelectedElderlyUser,
+} from "../utils/caregiverContext";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -85,6 +91,8 @@ export default function Dashboard() {
   const [faceName, setFaceName] = useState("");
   const [faceRelation, setFaceRelation] = useState("");
   const [savedFaceImages, setSavedFaceImages] = useState({});
+  const [linkedElderlyUsers, setLinkedElderlyUsers] = useState([]);
+  const [selectedElderlyId, setSelectedElderlyId] = useState(getSelectedElderlyUser()?.id || "");
   const navigate = useNavigate();
   const hasFetched = useRef(false);
 
@@ -146,6 +154,37 @@ export default function Dashboard() {
     });
   };
 
+  const fetchSelectedElderlyMedicines = async (token, elderlyUser) => {
+    if (!elderlyUser?.id) {
+      setLogs([]);
+      clearSelectedElderlyUser();
+      setSelectedElderlyId("");
+      return;
+    }
+
+    setSelectedElderlyId(elderlyUser.id);
+    setSelectedElderlyUser(elderlyUser);
+
+    const response = await fetch(buildCaregiverEndpoint(elderlyUser.id, "/medicines/today"), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("token");
+      clearSelectedElderlyUser();
+      navigate("/");
+      return;
+    }
+
+    if (!response.ok) {
+      setLogs([]);
+      return;
+    }
+
+    const text = await response.text();
+    setLogs(text ? JSON.parse(text) : []);
+  };
+
   const fetchData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -154,19 +193,67 @@ export default function Dashboard() {
         return;
       }
 
-      const [medRes, profileRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/medicine`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const profileRes = await fetch(`${API_BASE_URL}/api/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (
-        medRes.status === 401 || medRes.status === 403 ||
-        profileRes.status === 401 || profileRes.status === 403
-      ) {
+      if (profileRes.status === 401 || profileRes.status === 403) {
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
+
+      const profileData = profileRes.ok ? await profileRes.json() : null;
+      const nextRole = profileData?.role || "";
+      setRole(nextRole);
+      setProfileName(profileData?.name || "");
+      setFaceName("");
+      setFaceRelation("");
+
+      if (nextRole === "CAREGIVER") {
+        const linkedRes = await fetch(`${API_BASE_URL}/api/caregiver/elderly-users`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (linkedRes.status === 401 || linkedRes.status === 403) {
+          localStorage.removeItem("token");
+          navigate("/");
+          return;
+        }
+
+        const linkedUsers = linkedRes.ok ? await linkedRes.json() : [];
+        setLinkedElderlyUsers(linkedUsers);
+        setFaceServiceStatus("offline");
+        setKnownFaces([]);
+        setSavedFaceImages({});
+
+        if (!linkedUsers.length) {
+          setLogs([]);
+          clearSelectedElderlyUser();
+          setSelectedElderlyId("");
+          return;
+        }
+
+        const storedSelection = getSelectedElderlyUser();
+        const matchingSelection = linkedUsers.find((user) => user.id === storedSelection?.id);
+        if (matchingSelection) {
+          await fetchSelectedElderlyMedicines(token, matchingSelection);
+        } else {
+          setLogs([]);
+          clearSelectedElderlyUser();
+          setSelectedElderlyId("");
+        }
+        return;
+      }
+
+      setLinkedElderlyUsers([]);
+      clearSelectedElderlyUser();
+
+      const medRes = await fetch(`${API_BASE_URL}/api/medicine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (medRes.status === 401 || medRes.status === 403) {
         localStorage.removeItem("token");
         navigate("/");
         return;
@@ -177,16 +264,8 @@ export default function Dashboard() {
         return;
       }
 
-      const [medText, profileData] = await Promise.all([
-        medRes.text(),
-        profileRes.ok ? profileRes.json() : Promise.resolve(null),
-      ]);
-
+      const medText = await medRes.text();
       setLogs(medText ? JSON.parse(medText) : []);
-      setRole(profileData?.role || "");
-      setProfileName(profileData?.name || "");
-      setFaceName("");
-      setFaceRelation("");
       await loadFaceData(token);
     } catch (err) {
       console.error(err);
@@ -195,6 +274,7 @@ export default function Dashboard() {
       setProfileName("");
       setFaceServiceStatus("offline");
       setKnownFaces([]);
+      setLinkedElderlyUsers([]);
     } finally {
       setLoading(false);
     }
@@ -226,6 +306,8 @@ export default function Dashboard() {
   };
 
   const firstName = profileName.trim().split(" ").filter(Boolean)[0];
+  const selectedElderly = linkedElderlyUsers.find((user) => user.id === selectedElderlyId) || getSelectedElderlyUser();
+  const hasActiveElderlySelection = isElderly || Boolean(selectedElderlyId);
   const faceStatusLabel = faceServiceStatus === "online"
     ? "Ready"
     : faceServiceStatus === "checking"
@@ -274,6 +356,21 @@ export default function Dashboard() {
       text: "A short walk or a few light stretches can add comfort and energy to the day.",
     },
   ];
+
+  const handleElderlySelection = async (elderlyUser) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await fetchSelectedElderlyMedicines(token, elderlyUser);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFaceFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -402,130 +499,180 @@ export default function Dashboard() {
             ) : (
               <>
                 <div className="dash-stats-row">
-                  <div className="stat-card stat-card--due">
-                    <div className="stat-icon"><FaExclamationCircle /></div>
-                    <div>
-                      <p className="stat-num">{due.length}</p>
-                      <p className="stat-label">Due</p>
-                    </div>
-                  </div>
-                  <div className="stat-card stat-card--upcoming">
-                    <div className="stat-icon"><FaClock /></div>
-                    <div>
-                      <p className="stat-num">{upcoming.length}</p>
-                      <p className="stat-label">Upcoming</p>
-                    </div>
-                  </div>
-                  <div className="stat-card stat-card--done">
-                    <div className="stat-icon"><FaCheck /></div>
-                    <div>
-                      <p className="stat-num">{taken}</p>
-                      <p className="stat-label">Taken</p>
-                    </div>
-                  </div>
-                  <div className="stat-card stat-card--total">
-                    <div className="stat-icon"><FaPills /></div>
-                    <div>
-                      <p className="stat-num">{total}</p>
-                      <p className="stat-label">Total today</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="dash-main-row">
-                  <div className="dash-card">
-                    <p className="dash-card-title">Today's Progress</p>
-                    <div className="dash-card-body dash-card-body--center">
-                      <ProgressRing taken={taken} total={total} />
-                      {allDone && <p className="dash-all-done">All done for today!</p>}
-                      {total === 0 && <p className="dash-no-med">No medicines today</p>}
-                      {!allDone && total > 0 && (
-                        <p className="dash-progress-msg">
-                          {taken === 0 ? "Start taking your medicines" : `${total - taken} left to take`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="dash-card">
-                    <p className="dash-card-title">Next Medicine</p>
-                    <div className="dash-card-body">
-                      {nextMed ? (
-                        <div className="next-med-wrap">
-                          <div className="next-med-icon"><FaPills /></div>
-                          <div className="next-med-info">
-                            <p className="next-med-name">{nextMed.medicine?.name}</p>
-                            <p className="next-med-dosage">{nextMed.medicine?.dosage}</p>
-                            <div className="next-med-time-row">
-                              <FaClock size={12} />
-                              <span>{formatAmPm(nextMed.medicine?.time)}</span>
-                            </div>
-                          </div>
-                          {getTimeUntil(nextMed.medicine?.time) && (
-                            <span className="next-med-badge">
-                              {getTimeUntil(nextMed.medicine?.time)}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="next-med-empty">
-                          <FaCheck size={28} color="#38a169" />
-                          <p>{allDone ? "All medicines taken" : "No upcoming medicines"}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {due.length > 0 && (
-                  <div className="dash-due-banner">
-                    <div className="due-banner-left">
-                      <FaExclamationCircle />
-                      <div>
-                        <p className="due-banner-title">
-                          You have {due.length} medicine{due.length > 1 ? "s" : ""} due
-                        </p>
-                        <p className="due-banner-sub">
-                          {due.map((l) => l.medicine?.name).join(", ")}
+                  {!isElderly && (
+                    <div className="dash-caregiver-picker">
+                      <div className="dash-caregiver-copy">
+                        <p className="dash-card-title">Choose an elder to manage</p>
+                        <h3 className="dash-face-heading">
+                          {selectedElderly?.name ? `Currently managing ${selectedElderly.name}` : "No elder selected yet"}
+                        </h3>
+                        <p className="dash-face-subtext">
+                          Choose one assigned elder to open their dashboard, medicines, and caretaker tools.
                         </p>
                       </div>
+                      <div className="dash-caregiver-list">
+                        {linkedElderlyUsers.map((elderlyUser) => (
+                          <button
+                            key={elderlyUser.id}
+                            type="button"
+                            className={`dash-caregiver-card ${selectedElderlyId === elderlyUser.id ? "dash-caregiver-card--active" : ""}`}
+                            onClick={() => handleElderlySelection(elderlyUser)}
+                          >
+                            <strong>{elderlyUser.name}</strong>
+                            <span>{elderlyUser.email}</span>
+                            <small>{elderlyUser.phone || "No phone added"}</small>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <button className="due-banner-btn" onClick={() => navigate("/medicines")}>
-                      View <FaArrowRight />
-                    </button>
-                  </div>
-                )}
+                  )}
 
-                {upcoming.length > 0 && (
-                  <div className="dash-upcoming-section">
-                    <div className="section-header">
-                      <p className="section-header-title">Upcoming Today</p>
-                      <button className="section-header-link" onClick={() => navigate("/medicines")}>
-                        View all <FaArrowRight size={11} />
-                      </button>
+                  {hasActiveElderlySelection && (
+                    <>
+                      <div className="stat-card stat-card--due">
+                        <div className="stat-icon"><FaExclamationCircle /></div>
+                        <div>
+                          <p className="stat-num">{due.length}</p>
+                          <p className="stat-label">Due</p>
+                        </div>
+                      </div>
+                      <div className="stat-card stat-card--upcoming">
+                        <div className="stat-icon"><FaClock /></div>
+                        <div>
+                          <p className="stat-num">{upcoming.length}</p>
+                          <p className="stat-label">Upcoming</p>
+                        </div>
+                      </div>
+                      <div className="stat-card stat-card--done">
+                        <div className="stat-icon"><FaCheck /></div>
+                        <div>
+                          <p className="stat-num">{taken}</p>
+                          <p className="stat-label">Taken</p>
+                        </div>
+                      </div>
+                      <div className="stat-card stat-card--total">
+                        <div className="stat-icon"><FaPills /></div>
+                        <div>
+                          <p className="stat-num">{total}</p>
+                          <p className="stat-label">Total today</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {!hasActiveElderlySelection && !isElderly ? (
+                  <div className="dash-card dash-card--empty">
+                    <p className="dash-card-title">Caretaker Dashboard</p>
+                    <div className="dash-card-body">
+                      <p className="dash-face-subtext">
+                        Select an elder above to load their dashboard. Until then, no elderly dashboard is shown.
+                      </p>
                     </div>
-                    <div className="upcoming-list">
-                      {upcoming.slice(0, 3).map((log) => (
-                        <div className="upcoming-item" key={log.id}>
-                          <div className="upcoming-dot" />
-                          <div className="upcoming-info">
-                            <p className="upcoming-name">{log.medicine?.name}</p>
-                            <p className="upcoming-dosage">{log.medicine?.dosage}</p>
-                          </div>
-                          <span className="upcoming-time">{formatAmPm(log.medicine?.time)}</span>
-                          {getTimeUntil(log.medicine?.time) && (
-                            <span className="upcoming-eta">{getTimeUntil(log.medicine?.time)}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="dash-main-row">
+                      <div className="dash-card">
+                        <p className="dash-card-title">Today's Progress</p>
+                        <div className="dash-card-body dash-card-body--center">
+                          <ProgressRing taken={taken} total={total} />
+                          {allDone && <p className="dash-all-done">All done for today!</p>}
+                          {total === 0 && <p className="dash-no-med">No medicines today</p>}
+                          {!allDone && total > 0 && (
+                            <p className="dash-progress-msg">
+                              {taken === 0 ? "Start taking your medicines" : `${total - taken} left to take`}
+                            </p>
                           )}
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="dash-card">
+                        <p className="dash-card-title">Next Medicine</p>
+                        <div className="dash-card-body">
+                          {nextMed ? (
+                            <div className="next-med-wrap">
+                              <div className="next-med-icon"><FaPills /></div>
+                              <div className="next-med-info">
+                                <p className="next-med-name">{nextMed.medicine?.name}</p>
+                                <p className="next-med-dosage">{nextMed.medicine?.dosage}</p>
+                                <div className="next-med-time-row">
+                                  <FaClock size={12} />
+                                  <span>{formatAmPm(nextMed.medicine?.time)}</span>
+                                </div>
+                              </div>
+                              {getTimeUntil(nextMed.medicine?.time) && (
+                                <span className="next-med-badge">
+                                  {getTimeUntil(nextMed.medicine?.time)}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="next-med-empty">
+                              <FaCheck size={28} color="#38a169" />
+                              <p>{allDone ? "All medicines taken" : "No upcoming medicines"}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+
+                    {due.length > 0 && (
+                      <div className="dash-due-banner">
+                        <div className="due-banner-left">
+                          <FaExclamationCircle />
+                          <div>
+                            <p className="due-banner-title">
+                              You have {due.length} medicine{due.length > 1 ? "s" : ""} due
+                            </p>
+                            <p className="due-banner-sub">
+                              {due.map((l) => l.medicine?.name).join(", ")}
+                            </p>
+                          </div>
+                        </div>
+                        <button className="due-banner-btn" onClick={() => navigate("/medicines")}>
+                          View <FaArrowRight />
+                        </button>
+                      </div>
+                    )}
+
+                    {upcoming.length > 0 && (
+                      <div className="dash-upcoming-section">
+                        <div className="section-header">
+                          <p className="section-header-title">Upcoming Today</p>
+                          <button className="section-header-link" onClick={() => navigate("/medicines")}>
+                            View all <FaArrowRight size={11} />
+                          </button>
+                        </div>
+                        <div className="upcoming-list">
+                          {upcoming.slice(0, 3).map((log) => (
+                            <div className="upcoming-item" key={log.id}>
+                              <div className="upcoming-dot" />
+                              <div className="upcoming-info">
+                                <p className="upcoming-name">{log.medicine?.name}</p>
+                                <p className="upcoming-dosage">{log.medicine?.dosage}</p>
+                              </div>
+                              <span className="upcoming-time">{formatAmPm(log.medicine?.time)}</span>
+                              {getTimeUntil(log.medicine?.time) && (
+                                <span className="upcoming-eta">{getTimeUntil(log.medicine?.time)}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      className="dash-manage-btn"
+                      onClick={() => navigate("/medicines")}
+                      disabled={!isElderly && !selectedElderlyId}
+                    >
+                      <FaPills /> {isElderly ? "Open medicines" : "Manage all medicines"} <FaArrowRight />
+                    </button>
+                  </>
                 )}
 
-                <button className="dash-manage-btn" onClick={() => navigate("/medicines")}>
-                  <FaPills /> {isElderly ? "Open medicines" : "Manage all medicines"} <FaArrowRight />
-                </button>
-
+                {isElderly && (
                 <div className="dash-face-card">
                   <div className="dash-face-header">
                     <div>
@@ -682,6 +829,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
+                )}
               </>
             )}
           </div>

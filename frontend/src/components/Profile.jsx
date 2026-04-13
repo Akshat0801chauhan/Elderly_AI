@@ -3,9 +3,11 @@ import Layout from "./Layout";
 import {
   FaUser, FaPhone, FaMapMarkerAlt, FaShieldAlt,
   FaEnvelope, FaSave, FaTimes, FaPen, FaCalendarAlt,
-  FaVenusMars, FaTint
+  FaVenusMars, FaTint, FaArrowRight
 } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css";
+import { getSelectedElderlyUser, setSelectedElderlyUser } from "../utils/caregiverContext";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -23,7 +25,7 @@ function Field({
           <select
             className="pf-field-input"
             value={currentValue}
-            onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))}
+            onChange={(event) => setFormData((prev) => ({ ...prev, [field]: event.target.value }))}
           >
             <option value="">Select {label}</option>
             {options.map((option) => (
@@ -36,7 +38,7 @@ function Field({
             type={type}
             max={max}
             value={currentValue}
-            onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))}
+            onChange={(event) => setFormData((prev) => ({ ...prev, [field]: event.target.value }))}
           />
         )
       ) : (
@@ -53,29 +55,50 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("general");
+  const [linkedElderlyUsers, setLinkedElderlyUsers] = useState([]);
+  const [selectedElderlyId, setSelectedElderlyId] = useState(getSelectedElderlyUser()?.id || "");
 
   const token = localStorage.getItem("token");
   const today = new Date().toISOString().split("T")[0];
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/profile", {
+        const profileRes = await fetch("http://localhost:8080/api/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) {
+        if (!profileRes.ok) {
           throw new Error("Failed to load profile");
         }
-        const data = await res.json();
-        setProfile(data);
-        setFormData(data);
+
+        const profileData = await profileRes.json();
+        setProfile(profileData);
+        setFormData(profileData);
+
+        if (profileData.role === "CAREGIVER") {
+          const linkedRes = await fetch("http://localhost:8080/api/caregiver/elderly-users", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!linkedRes.ok) {
+            throw new Error("Failed to load assigned elderly users");
+          }
+
+          const linkedUsers = await linkedRes.json();
+          setLinkedElderlyUsers(linkedUsers);
+
+          const activeUser = linkedUsers.find((user) => user.id === getSelectedElderlyUser()?.id);
+          setSelectedElderlyId(activeUser?.id || "");
+        }
       } catch (err) {
         console.error(err);
         setError("Could not load profile");
       }
     };
+
     fetchProfile();
-  }, []);
+  }, [token]);
 
   const handleSave = async () => {
     try {
@@ -137,7 +160,12 @@ export default function Profile() {
     }
   };
 
-  if (!profile) {
+  const handleSetActiveElderly = (elderlyUser) => {
+    setSelectedElderlyId(elderlyUser.id);
+    setSelectedElderlyUser(elderlyUser);
+  };
+
+  if (!profile && !error) {
     return (
       <Layout>
         <div className="pf-loading">
@@ -148,16 +176,23 @@ export default function Profile() {
     );
   }
 
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="pf-loading">{error}</div>
+      </Layout>
+    );
+  }
+
   const initials = profile.name
-    ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? profile.name.split(" ").map((name) => name[0]).join("").toUpperCase().slice(0, 2)
     : "?";
   const isElderly = profile.role === "ELDERLY";
+  const isCaregiver = profile.role === "CAREGIVER";
 
   return (
     <Layout>
       <div className="pf-page">
-
-        {/* Left: avatar card */}
         <div className="pf-sidebar-card">
           <div className="pf-avatar">{initials}</div>
           <p className="pf-name">{profile.name || "-"}</p>
@@ -200,30 +235,27 @@ export default function Profile() {
           {error && <p className="error">{error}</p>}
         </div>
 
-        {/* Right: tabbed details */}
         <div className="pf-main">
-
-          {/* Tab bar */}
           <div className="pf-tabs">
             {[
               { id: "general", label: "General info" },
               ...(isElderly ? [{ id: "health", label: "Health info" }] : []),
-            ].map((t) => (
+              ...(isCaregiver ? [{ id: "assigned", label: "Assigned elderly" }] : []),
+            ].map((tab) => (
               <button
-                key={t.id}
-                className={`pf-tab ${activeTab === t.id ? "pf-tab--on" : ""}`}
-                onClick={() => setActiveTab(t.id)}
+                key={tab.id}
+                className={`pf-tab ${activeTab === tab.id ? "pf-tab--on" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
               >
-                {t.label}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {/* General Info */}
           {activeTab === "general" && (
             <div className="pf-section">
               <div className="pf-section-header">
-                <h3>General Information</h3>
+                <h3>{isCaregiver ? "Caretaker Profile" : "General Information"}</h3>
                 {editing && <span className="pf-editing-badge">Editing</span>}
               </div>
               <div className="pf-grid">
@@ -259,14 +291,13 @@ export default function Profile() {
                 )}
               </div>
 
-              {/* Address full width */}
               <div className="pf-field pf-field--full">
                 <p className="pf-field-label"><FaMapMarkerAlt className="pf-field-icon" /> Address</p>
                 {editing ? (
                   <input
                     className="pf-field-input"
                     value={formData.address || ""}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
                   />
                 ) : (
                   <p className="pf-field-value">{profile.address || "-"}</p>
@@ -275,7 +306,6 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Health Info */}
           {isElderly && activeTab === "health" && (
             <div className="pf-section">
               <div className="pf-section-header">
@@ -301,6 +331,58 @@ export default function Profile() {
             </div>
           )}
 
+          {isCaregiver && activeTab === "assigned" && (
+            <div className="pf-section">
+              <div className="pf-section-header">
+                <h3>Assigned Elderly History</h3>
+              </div>
+
+              {linkedElderlyUsers.length === 0 ? (
+                <p className="pf-empty-note">No elderly users are assigned to this caretaker yet.</p>
+              ) : (
+                <div className="pf-elderly-list">
+                  {linkedElderlyUsers.map((elderlyUser) => {
+                    const isActive = elderlyUser.id === selectedElderlyId;
+                    return (
+                      <div
+                        key={elderlyUser.id}
+                        className={`pf-elderly-card ${isActive ? "pf-elderly-card--active" : ""}`}
+                      >
+                        <div className="pf-elderly-top">
+                          <div>
+                            <p className="pf-elderly-name">{elderlyUser.name}</p>
+                            <p className="pf-elderly-meta">{elderlyUser.email}</p>
+                            <p className="pf-elderly-meta">{elderlyUser.phone || "No phone added"}</p>
+                          </div>
+                          <span className={`pf-elderly-badge ${isActive ? "pf-elderly-badge--active" : ""}`}>
+                            {isActive ? "Active" : "Assigned"}
+                          </span>
+                        </div>
+
+                        <div className="pf-elderly-actions">
+                          <button
+                            className="pf-elderly-btn"
+                            onClick={() => handleSetActiveElderly(elderlyUser)}
+                          >
+                            {isActive ? "Active elderly" : "Set active"}
+                          </button>
+                          <button
+                            className="pf-elderly-btn pf-elderly-btn--ghost"
+                            onClick={() => {
+                              handleSetActiveElderly(elderlyUser);
+                              navigate("/dashboard");
+                            }}
+                          >
+                            Open dashboard <FaArrowRight />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Layout>

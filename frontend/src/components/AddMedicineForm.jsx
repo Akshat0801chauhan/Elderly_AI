@@ -32,7 +32,7 @@ const defaultMealTimes = {
   dinnerTime: "",
 };
 
-export default function AddMedicineForm({ close, fetchMedicines, fetchProgress, existing }) {
+export default function AddMedicineForm({ close, fetchMedicines, fetchProgress, existing, apiBasePath = "http://localhost:8080/api/medicine" }) {
   const token = localStorage.getItem("token");
 
   const [form, setForm] = useState({
@@ -172,8 +172,8 @@ export default function AddMedicineForm({ close, fetchMedicines, fetchProgress, 
     };
 
     const url = isEditing
-      ? `http://localhost:8080/api/medicine/${existing.id}`
-      : "http://localhost:8080/api/medicine";
+      ? `${apiBasePath}/${existing.id}`
+      : apiBasePath;
     const method = isEditing ? "PUT" : "POST";
 
     try {

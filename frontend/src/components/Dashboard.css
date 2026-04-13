@@ -1036,6 +1036,54 @@
   color: #64748b;
 }
 
+.dash-caregiver-picker {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  border: 1px solid #fed7aa;
+}
+
+.dash-caregiver-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.dash-caregiver-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dash-caregiver-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.dash-caregiver-card span,
+.dash-caregiver-card small {
+  color: #64748b;
+}
+
+.dash-caregiver-card--active {
+  border-color: #d18b2c;
+  box-shadow: 0 16px 28px rgba(209, 139, 44, 0.16);
+}
+
+.dash-card--empty {
+  border-style: dashed;
+}
+
 @media (max-width: 720px) {
   .dash-face-popup-body {
     grid-template-columns: 1fr;

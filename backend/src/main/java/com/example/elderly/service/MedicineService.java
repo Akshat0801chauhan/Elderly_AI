@@ -82,6 +82,22 @@ public class MedicineService {
         ).collect(Collectors.toList());
     }
 
+    @Transactional
+    public List<MedicineTakenLog> getTodayMedicinesForElderly(User elderly) {
+        LocalDate today = LocalDate.now();
+        List<Medicine> active = medicineRepository.findActiveOnDate(elderly.getId(), today);
+        return active.stream().map(med ->
+            takenLogRepository.findByMedicineAndLogDate(med, today)
+                .orElseGet(() -> {
+                    MedicineTakenLog log = new MedicineTakenLog();
+                    log.setMedicine(med);
+                    log.setLogDate(today);
+                    log.setTaken(false);
+                    return takenLogRepository.save(log);
+                })
+        ).collect(Collectors.toList());
+    }
+
     // ── GET ALL (medicine management page) ───────────────
 
     public List<Medicine> getAllMedicines(String email) {

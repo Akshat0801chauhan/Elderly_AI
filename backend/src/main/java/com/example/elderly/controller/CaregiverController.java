@@ -61,6 +61,12 @@ public class CaregiverController {
         return ResponseEntity.ok(medicineService.getAllMedicinesForElderly(elderly));
     }
 
+    @GetMapping("/elderly-users/{elderlyId}/medicines/today")
+    public ResponseEntity<?> getTodayMedicines(@PathVariable String elderlyId) {
+        User elderly = caregiverAccessService.validateAndGetElderly(getEmail(), elderlyId);
+        return ResponseEntity.ok(medicineService.getTodayMedicinesForElderly(elderly));
+    }
+
     @PostMapping("/elderly-users/{elderlyId}/medicines")
     public ResponseEntity<?> addMedicine(
             @PathVariable String elderlyId,

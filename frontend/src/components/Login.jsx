@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { clearSelectedElderlyUser } from "../utils/caregiverContext";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -38,6 +39,7 @@ export default function Login() {
       const data = await res.json();
 
       if (res.ok) {
+        clearSelectedElderlyUser();
         localStorage.setItem("token", data.token);
         navigate("/dashboard");
       } else {

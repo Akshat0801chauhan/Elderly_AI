@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 import json
 import re
+import uuid
 
 import numpy as np
 
@@ -20,8 +21,9 @@ class FaceStore:
         image_bytes: bytes,
         image_suffix: str,
         relation: str | None = None,
+        user_email: str | None = None,
     ) -> Path:
-        slug = self._slugify(name)
+        slug = f"{self._slugify(name)}-{uuid.uuid4().hex[:8]}"
         file_path = self.storage_dir / f"{slug}.json"
         image_path = self.images_dir / f"{slug}{self._normalize_suffix(image_suffix)}"
         payload = {
@@ -32,6 +34,7 @@ class FaceStore:
             "embedding_model": "insightface-buffalo_l",
             "image_path": str(image_path.name),
             "relation": relation,
+            "user_email": user_email,
         }
         file_path.write_text(json.dumps(payload), encoding="utf-8")
         image_path.write_bytes(image_bytes)
@@ -52,26 +55,31 @@ class FaceStore:
                         "embedding_model": payload.get("embedding_model", "legacy"),
                         "image_path": payload.get("image_path"),
                         "relation": payload.get("relation"),
+                        "user_email": payload.get("user_email"),
                     }
                 )
             except (KeyError, json.JSONDecodeError, OSError, TypeError, ValueError):
                 continue
         return faces
 
-    def list_faces(self) -> List[dict]:
+    def list_faces(self, user_email: str | None = None) -> List[dict]:
         return [
             {
                 "name": face["name"],
                 "slug": face["slug"],
                 "image_path": face.get("image_path"),
                 "relation": face.get("relation"),
+                "user_email": face.get("user_email"),
             }
             for face in self.load_faces()
+            if user_email is None or face.get("user_email") == user_email
         ]
 
-    def get_face_image_path(self, slug: str) -> Path | None:
-        for face in self.list_faces():
+    def get_face_image_path(self, slug: str, user_email: str | None = None) -> Path | None:
+        for face in self.load_faces():
             if face["slug"] == slug and face.get("image_path"):
+                if user_email is not None and face.get("user_email") != user_email:
+                    return None
                 image_path = self.images_dir / face["image_path"]
                 if image_path.exists():
                     return image_path

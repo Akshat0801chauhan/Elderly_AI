@@ -1,6 +1,7 @@
 package com.example.elderly.service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -58,10 +59,15 @@ public class AiFaceService {
         }
     }
 
-    public Map<String, Object> listFaces() {
+    public Map<String, Object> listFaces(String userEmail) {
         try {
+            String url = aiServiceBaseUrl + "/faces";
+            if (userEmail != null && !userEmail.isBlank()) {
+                url += "?user_email=" + URLEncoder.encode(userEmail, StandardCharsets.UTF_8);
+            }
+
             Map<String, Object> response = restTemplate().exchange(
-                    aiServiceBaseUrl + "/faces",
+                    url,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<Map<String, Object>>() {}
@@ -108,7 +114,7 @@ public class AiFaceService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         String resolvedName = normalizeName(requestedName, user);
-        MultiValueMap<String, HttpEntity<?>> body = multipartBody(image, resolvedName, requestedRelation);
+        MultiValueMap<String, HttpEntity<?>> body = multipartBody(image, resolvedName, requestedRelation, email);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         HttpEntity<MultiValueMap<String, HttpEntity<?>>> request = new HttpEntity<>(body, headers);
@@ -127,11 +133,11 @@ public class AiFaceService {
         }
     }
 
-    public Map<String, Object> recognizeFace(MultipartFile image) {
+    public Map<String, Object> recognizeFace(String userEmail, MultipartFile image) {
         validateImage(image);
 
         try {
-            MultiValueMap<String, HttpEntity<?>> body = multipartBody(image, null, null);
+            MultiValueMap<String, HttpEntity<?>> body = multipartBody(image, null, null, userEmail);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             HttpEntity<MultiValueMap<String, HttpEntity<?>>> request = new HttpEntity<>(body, headers);
@@ -149,10 +155,14 @@ public class AiFaceService {
         }
     }
 
-    public ResponseEntity<byte[]> getFaceImage(String slug) {
+    public ResponseEntity<byte[]> getFaceImage(String slug, String userEmail) {
         try {
+            // The backend already authorizes the user and verifies face ownership.
+            // For image proxying, we do not need to pass user_email to the AI service.
+            String url = aiServiceBaseUrl + "/faces/" + slug + "/image";
+
             ResponseEntity<byte[]> response = restTemplate().exchange(
-                    aiServiceBaseUrl + "/faces/" + slug + "/image",
+                    url,
                     HttpMethod.GET,
                     null,
                     byte[].class
@@ -160,7 +170,16 @@ public class AiFaceService {
 
             HttpHeaders headers = new HttpHeaders();
             MediaType contentType = response.getHeaders().getContentType();
-            headers.setContentType(contentType != null ? contentType : MediaType.IMAGE_JPEG);
+            headers.setContentType(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM);
+            if (response.getHeaders().getContentLength() >= 0) {
+                headers.setContentLength(response.getHeaders().getContentLength());
+            }
+            if (response.getHeaders().containsHeader(HttpHeaders.CONTENT_DISPOSITION)) {
+                headers.put(HttpHeaders.CONTENT_DISPOSITION, response.getHeaders().get(HttpHeaders.CONTENT_DISPOSITION));
+            }
+            if (response.getHeaders().containsHeader(HttpHeaders.CACHE_CONTROL)) {
+                headers.put(HttpHeaders.CACHE_CONTROL, response.getHeaders().get(HttpHeaders.CACHE_CONTROL));
+            }
             return new ResponseEntity<>(response.getBody(), headers, response.getStatusCode());
         } catch (HttpStatusCodeException ex) {
             throw downstreamException(ex);
@@ -173,7 +192,7 @@ public class AiFaceService {
         return new RestTemplate();
     }
 
-    private MultiValueMap<String, HttpEntity<?>> multipartBody(MultipartFile image, String name, String relation) {
+    private MultiValueMap<String, HttpEntity<?>> multipartBody(MultipartFile image, String name, String relation, String userEmail) {
         try {
             String filename = image.getOriginalFilename() != null ? image.getOriginalFilename() : "face-upload.jpg";
             MultiValueMap<String, HttpEntity<?>> body = new LinkedMultiValueMap<>();
@@ -200,6 +219,12 @@ public class AiFaceService {
                 HttpHeaders relationHeaders = new HttpHeaders();
                 relationHeaders.setContentDisposition(ContentDisposition.formData().name("relation").build());
                 body.add("relation", new HttpEntity<>(relation, relationHeaders));
+            }
+
+            if (userEmail != null && !userEmail.isBlank()) {
+                HttpHeaders emailHeaders = new HttpHeaders();
+                emailHeaders.setContentDisposition(ContentDisposition.formData().name("user_email").build());
+                body.add("user_email", new HttpEntity<>(userEmail, emailHeaders));
             }
 
             return body;

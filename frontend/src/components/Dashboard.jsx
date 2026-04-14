@@ -764,9 +764,9 @@ export default function Dashboard() {
                                 className="dash-face-saved-card"
                                 onClick={() => setSelectedSavedFace(face)}
                               >
-                                {face.imageUrl ? (
+                                {savedFaceImages[face.slug] ? (
                                   <img
-                                    src={savedFaceImages[face.slug] || ""}
+                                    src={savedFaceImages[face.slug]}
                                     alt={face.name}
                                     className="dash-face-saved-thumb"
                                   />

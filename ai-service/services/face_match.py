@@ -10,12 +10,25 @@ class FaceMatcher:
         self.store = store
         self.threshold = threshold
 
-    def find_best_match(self, probe_encoding: np.ndarray) -> Optional[dict]:
+    def find_best_match(
+        self,
+        probe_encoding: np.ndarray,
+        user_email: str | None = None,
+    ) -> Optional[dict]:
         known_faces = self.store.load_faces()
+        if user_email is not None:
+            known_faces = [face for face in known_faces if face.get("user_email") == user_email]
         return self._find_best_match_from_faces(probe_encoding, known_faces)
 
-    def find_matches(self, probe_encodings: list[np.ndarray]) -> list[dict]:
+    def find_matches(
+        self,
+        probe_encodings: list[np.ndarray],
+        user_email: str | None = None,
+    ) -> list[dict]:
         known_faces = self.store.load_faces()
+        if user_email is not None:
+            known_faces = [face for face in known_faces if face.get("user_email") == user_email]
+
         matches: list[dict] = []
         seen_names: set[str] = set()
 

@@ -1036,6 +1036,93 @@
   color: #64748b;
 }
 
+.dash-face-saved-card-wrapper {
+  position: relative;
+}
+
+.dash-face-card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dash-face-saved-card-wrapper:hover .dash-face-card-actions {
+  opacity: 1;
+}
+
+.dash-face-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.dash-face-action-btn--edit {
+  background: #e0f2fe;
+  color: #0277bd;
+}
+
+.dash-face-action-btn--edit:hover {
+  background: #b3e5fc;
+}
+
+.dash-face-action-btn--delete {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.dash-face-action-btn--delete:hover {
+  background: #ffcdd2;
+}
+
+.dash-face-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dash-face-edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.dash-face-delete-confirm {
+  text-align: center;
+}
+
+.dash-face-delete-confirm p {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.dash-face-delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.dash-face-btn--danger {
+  background: #c62828;
+  color: #fff;
+}
+
+.dash-face-btn--danger:hover {
+  background: #b71c1c;
+}
+
 .dash-caregiver-picker {
   grid-column: 1 / -1;
   display: grid;

@@ -97,12 +97,16 @@ async def recognize_face(
         "message": f"Recognized {best_match['name']} in the image.",
         "name": best_match["name"],
         "similarity": round(best_match["similarity"], 4),
+        "slug": best_match.get("slug"),
+        "relation": best_match.get("relation"),
         "detected_faces": len(detected_faces),
         "matches": [
             {
                 "face_index": match["face_index"],
                 "name": match["name"],
                 "similarity": round(match["similarity"], 4),
+                "slug": match.get("slug"),
+                "relation": match.get("relation"),
                 "bbox": detected_faces[match["face_index"]].bbox,
                 "detection_score": round(
                     detected_faces[match["face_index"]].detection_score,
@@ -141,6 +145,47 @@ def get_face_image(face_slug: str, user_email: str | None = None):
     if image_path is None:
         raise HTTPException(status_code=404, detail="Face image not found.")
     return FileResponse(image_path)
+
+
+@app.put("/faces/{face_slug}")
+def update_face(
+    face_slug: str,
+    name: str | None = Form(None),
+    relation: str | None = Form(None),
+    user_email: str | None = Form(None),
+) -> dict:
+    if not name and not relation:
+        raise HTTPException(status_code=400, detail="At least one of name or relation must be provided.")
+    
+    if name:
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty.")
+    
+    if relation is not None:
+        relation = relation.strip() or None
+    
+    success = store.update_face(
+        face_slug,
+        name=name,
+        relation=relation,
+        user_email=user_email.strip() if user_email else None,
+    )
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Face not found or access denied.")
+    
+    return {"message": f"Face {face_slug} updated successfully."}
+
+
+@app.delete("/faces/{face_slug}")
+def delete_face(face_slug: str, user_email: str | None = Form(None)) -> dict:
+    success = store.delete_face(face_slug, user_email.strip() if user_email else None)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Face not found or access denied.")
+    
+    return {"message": f"Face {face_slug} deleted successfully."}
 
 
 if __name__ == "__main__":

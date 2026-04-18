@@ -85,6 +85,50 @@ class FaceStore:
                     return image_path
         return None
 
+    def update_face(self, slug: str, name: str | None = None, relation: str | None = None, user_email: str | None = None) -> bool:
+        file_path = self.storage_dir / f"{slug}.json"
+        if not file_path.exists():
+            return False
+        
+        try:
+            payload = json.loads(file_path.read_text(encoding="utf-8"))
+            if user_email is not None and payload.get("user_email") != user_email:
+                return False
+            
+            if name is not None:
+                payload["name"] = name
+            if relation is not None:
+                payload["relation"] = relation
+            
+            file_path.write_text(json.dumps(payload), encoding="utf-8")
+            return True
+        except (json.JSONDecodeError, OSError):
+            return False
+
+    def delete_face(self, slug: str, user_email: str | None = None) -> bool:
+        file_path = self.storage_dir / f"{slug}.json"
+        if not file_path.exists():
+            return False
+        
+        try:
+            payload = json.loads(file_path.read_text(encoding="utf-8"))
+            if user_email is not None and payload.get("user_email") != user_email:
+                return False
+            
+            # Delete the JSON file
+            file_path.unlink()
+            
+            # Delete the image file if it exists
+            image_path_str = payload.get("image_path")
+            if image_path_str:
+                image_path = self.images_dir / image_path_str
+                if image_path.exists():
+                    image_path.unlink()
+            
+            return True
+        except (json.JSONDecodeError, OSError):
+            return False
+
     def _slugify(self, value: str) -> str:
         slug = re.sub(r"[^a-zA-Z0-9]+", "_", value.strip().lower()).strip("_")
         return slug or "unknown"

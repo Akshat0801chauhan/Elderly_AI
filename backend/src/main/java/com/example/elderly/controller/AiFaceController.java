@@ -4,9 +4,11 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,5 +57,23 @@ public class AiFaceController {
     public ResponseEntity<Map<String, Object>> recognizeFace(@RequestParam("image") MultipartFile image) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(faceService.recognizeFace(email, image));
+    }
+
+    @PutMapping("/faces/{slug}")
+    public ResponseEntity<Void> updateFace(
+            @PathVariable String slug,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "relation", required = false) String relation
+    ) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        faceService.updateFace(email, slug, name, relation);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/faces/{slug}")
+    public ResponseEntity<Void> deleteFace(@PathVariable String slug) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        faceService.deleteFace(email, slug);
+        return ResponseEntity.ok().build();
     }
 }

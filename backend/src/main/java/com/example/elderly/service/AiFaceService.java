@@ -188,6 +188,56 @@ public class AiFaceService {
         }
     }
 
+    public void updateFace(String slug, String userEmail, String name, String relation) {
+        try {
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            if (name != null && !name.isBlank()) {
+                body.add("name", name.trim());
+            }
+            if (relation != null) {
+                body.add("relation", relation.trim().isEmpty() ? null : relation.trim());
+            }
+            body.add("user_email", userEmail);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            restTemplate().exchange(
+                    aiServiceBaseUrl + "/faces/" + slug,
+                    HttpMethod.PUT,
+                    request,
+                    Void.class
+            );
+        } catch (HttpStatusCodeException ex) {
+            throw downstreamException(ex);
+        } catch (Exception ex) {
+            throw unavailableException(ex);
+        }
+    }
+
+    public void deleteFace(String slug, String userEmail) {
+        try {
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("user_email", userEmail);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            restTemplate().exchange(
+                    aiServiceBaseUrl + "/faces/" + slug,
+                    HttpMethod.DELETE,
+                    request,
+                    Void.class
+            );
+        } catch (HttpStatusCodeException ex) {
+            throw downstreamException(ex);
+        } catch (Exception ex) {
+            throw unavailableException(ex);
+        }
+    }
+
     private RestTemplate restTemplate() {
         return new RestTemplate();
     }

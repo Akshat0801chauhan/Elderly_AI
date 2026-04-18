@@ -43,7 +43,8 @@ public class FaceService {
 
         String slug = aiResponse.get("slug") != null ? String.valueOf(aiResponse.get("slug")) : null;
         if (slug == null || slug.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not enroll face: missing slug from AI service.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Could not enroll face: missing slug from AI service.");
         }
 
         String resolvedName = name != null && !name.isBlank() ? name.trim() : user.getName();
@@ -52,7 +53,9 @@ public class FaceService {
         }
 
         String imageUrl = "/api/ai/face/faces/" + slug + "/image";
-        Face face = new Face();
+
+        // Update existing face if slug already exists, otherwise create new
+        Face face = faceRepository.findBySlugAndUser(slug, user).orElse(new Face());
         face.setSlug(slug);
         face.setName(resolvedName);
         face.setRelation(relation != null ? relation.trim() : null);
@@ -64,14 +67,59 @@ public class FaceService {
     }
 
     public Map<String, Object> recognizeFace(String email, MultipartFile image) {
-        return aiFaceService.recognizeFace(email, image);
+        Map<String, Object> aiResponse = aiFaceService.recognizeFace(email, image);
+
+        // Enrich the response with imageUrl so the frontend can display the matched face
+        if (Boolean.TRUE.equals(aiResponse.get("recognized"))) {
+            Object nameObj = aiResponse.get("name");
+            if (nameObj != null) {
+                String matchedName = String.valueOf(nameObj);
+                User user = findUserByEmail(email);
+                faceRepository.findAllByUser(user).stream()
+                        .filter(f -> f.getName() != null &&
+                                f.getName().equalsIgnoreCase(matchedName))
+                        .findFirst()
+                        .ifPresent(face -> {
+                            aiResponse.put("slug", face.getSlug());
+                            aiResponse.put("relation", face.getRelation() != null ? face.getRelation() : "");
+                            aiResponse.put("imageUrl", face.getImageUrl());
+                        });
+            }
+        }
+
+        return aiResponse;
     }
 
     public ResponseEntity<byte[]> getFaceImage(String email, String slug) {
         User user = findUserByEmail(email);
-        Face face = faceRepository.findBySlugAndUser(slug, user)
+        faceRepository.findBySlugAndUser(slug, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Face not found."));
         return aiFaceService.getFaceImage(slug, email);
+    }
+
+    public void updateFace(String email, String slug, String name, String relation) {
+        User user = findUserByEmail(email);
+        Face face = faceRepository.findBySlugAndUser(slug, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Face not found."));
+
+        if (name != null && !name.isBlank()) {
+            face.setName(name.trim());
+        }
+        if (relation != null) {
+            face.setRelation(relation.trim().isEmpty() ? null : relation.trim());
+        }
+
+        faceRepository.save(face);
+        aiFaceService.updateFace(slug, email, face.getName(), face.getRelation());
+    }
+
+    public void deleteFace(String email, String slug) {
+        User user = findUserByEmail(email);
+        Face face = faceRepository.findBySlugAndUser(slug, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Face not found."));
+
+        faceRepository.delete(face);
+        aiFaceService.deleteFace(slug, email);
     }
 
     private User findUserByEmail(String email) {

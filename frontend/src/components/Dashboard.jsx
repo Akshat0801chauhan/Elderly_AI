@@ -4,7 +4,8 @@ import Layout from "./Layout";
 import { useNavigate } from "react-router-dom";
 import {
   FaPills, FaCheck, FaExclamationCircle, FaClock, FaArrowRight,
-  FaTint, FaWalking, FaRobot, FaUtensils, FaCamera, FaUserCheck, FaSearch, FaShieldAlt
+  FaTint, FaWalking, FaRobot, FaUtensils, FaCamera, FaUserCheck, FaSearch, FaShieldAlt,
+  FaEdit, FaTrash
 } from "react-icons/fa";
 import {
   buildCaregiverEndpoint,
@@ -88,6 +89,11 @@ export default function Dashboard() {
   const [faceResult, setFaceResult] = useState(null);
   const [selectedSavedFace, setSelectedSavedFace] = useState(null);
   const [recognitionPopup, setRecognitionPopup] = useState(null);
+  const [enrollmentPopup, setEnrollmentPopup] = useState(null);
+  const [editingFace, setEditingFace] = useState(null);
+  const [deletingFace, setDeletingFace] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editRelation, setEditRelation] = useState("");
   const [faceName, setFaceName] = useState("");
   const [faceRelation, setFaceRelation] = useState("");
   const [savedFaceImages, setSavedFaceImages] = useState({});
@@ -95,15 +101,21 @@ export default function Dashboard() {
   const [selectedElderlyId, setSelectedElderlyId] = useState(getSelectedElderlyUser()?.id || "");
   const navigate = useNavigate();
   const hasFetched = useRef(false);
+  const savedFaceImagesRef = useRef({});
 
   useEffect(() => {
     return () => {
       if (facePreviewUrl) {
         URL.revokeObjectURL(facePreviewUrl);
       }
-      Object.values(savedFaceImages).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [facePreviewUrl, savedFaceImages]);
+  }, [facePreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(savedFaceImagesRef.current).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   const loadFaceData = async (token) => {
     try {
@@ -150,8 +162,11 @@ export default function Dashboard() {
 
     setSavedFaceImages((prev) => {
       Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      savedFaceImagesRef.current = nextImages;
       return nextImages;
     });
+
+    return nextImages;
   };
 
   const fetchSelectedElderlyMedicines = async (token, elderlyUser) => {
@@ -335,6 +350,44 @@ export default function Dashboard() {
     return "No medicines are scheduled right now. It is a good time to rest, hydrate, and keep your routine gentle.";
   };
 
+  const selectedSavedFaceImage = selectedSavedFace
+    ? savedFaceImages[selectedSavedFace.slug] || ""
+    : "";
+
+  // FIX: Use imageUrl stored directly on recognitionPopup first,
+  // then fall back to savedFaceImages cache
+  const recognitionFaceImage = recognitionPopup
+    ? savedFaceImages[recognitionPopup.slug] || recognitionPopup.imageUrl || ""
+    : "";
+
+  const fetchFaceImage = async (token, slug) => {
+    if (!slug) return null;
+
+    // Return cached version if already loaded
+    if (savedFaceImages[slug]) return savedFaceImages[slug];
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/face/faces/${slug}/image`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      setSavedFaceImages((prev) => {
+        const next = {
+          ...prev,
+          [slug]: objectUrl,
+        };
+        savedFaceImagesRef.current = next;
+        return next;
+      });
+      return objectUrl;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+
   const wellbeingTips = [
     {
       icon: FaTint,
@@ -411,6 +464,22 @@ export default function Dashboard() {
       return;
     }
 
+    // Check for duplicate name before enrolling
+    if (action === "enroll") {
+      const existingFace = knownFaces.find(
+        (face) => (face.name || "").toLowerCase() === faceName.trim().toLowerCase()
+      );
+      if (existingFace) {
+        setEnrollmentPopup({
+          name: existingFace.name,
+          relation: existingFace.relation || "",
+          slug: existingFace.slug || "",
+          imageUrl: savedFaceImages[existingFace.slug] || "",
+        });
+        return;
+      }
+    }
+
     setFaceAction(action);
     setFaceError("");
     setFaceResult(null);
@@ -434,6 +503,7 @@ export default function Dashboard() {
         },
         body: formData,
       });
+
       const rawText = await response.text();
       const data = rawText ? JSON.parse(rawText) : {};
 
@@ -456,14 +526,34 @@ export default function Dashboard() {
         }
         setFacePreviewUrl("");
       } else if (action === "recognize" && data?.recognized && data?.name) {
-        const matchedFace = knownFaces.find(
-          (face) => (face.name || "").toLowerCase() === data.name.toLowerCase()
-        );
+        // FIX: Backend now returns slug, relation and imageUrl directly in the recognize response.
+        // Use them first. Fall back to searching knownFaces locally if backend didn't return them.
+        const slug = data.slug || null;
+        const relation = data.relation || "";
+
+        // Step 1: Check if image is already cached in savedFaceImages
+        let imageUrl = slug ? savedFaceImages[slug] || null : null;
+
+        // Step 2: If not cached, fetch fresh from the server using slug from backend response
+        if (!imageUrl && slug) {
+          imageUrl = await fetchFaceImage(token, slug);
+        }
+
+        // Step 3: If no slug was returned, fall back to matching locally by name
+        if (!imageUrl) {
+          const matchedFace = knownFaces.find(
+            (face) => (face.name || "").toLowerCase() === data.name.toLowerCase()
+          );
+          if (matchedFace?.slug) {
+            imageUrl = savedFaceImages[matchedFace.slug] || await fetchFaceImage(token, matchedFace.slug);
+          }
+        }
+
         setRecognitionPopup({
           name: data.name,
-          relation: matchedFace?.relation || "",
-          slug: matchedFace?.slug || "",
-          imageUrl: matchedFace?.imageUrl || "",
+          relation: relation,
+          slug: slug || "",
+          imageUrl: imageUrl || "",
         });
       }
     } catch (err) {
@@ -471,6 +561,76 @@ export default function Dashboard() {
       setFaceError(err.message || "Unable to complete the AI request.");
     } finally {
       setFaceAction("");
+    }
+  };
+
+  const handleEditFace = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    if (!editName.trim()) {
+      setFaceError("Name cannot be empty.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("name", editName.trim());
+      if (editRelation.trim()) {
+        formData.append("relation", editRelation.trim());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/ai/face/faces/${editingFace.slug}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.detail || errorData?.error || errorData?.message || "Failed to update face.");
+      }
+
+      await loadFaceData(token);
+      setEditingFace(null);
+      setEditName("");
+      setEditRelation("");
+    } catch (err) {
+      console.error(err);
+      setFaceError(err.message || "Failed to update face.");
+    }
+  };
+
+  const handleDeleteFace = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/face/faces/${deletingFace.slug}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.detail || errorData?.error || errorData?.message || "Failed to delete face.");
+      }
+
+      await loadFaceData(token);
+      setDeletingFace(null);
+    } catch (err) {
+      console.error(err);
+      setFaceError(err.message || "Failed to delete face.");
     }
   };
 
@@ -758,29 +918,55 @@ export default function Dashboard() {
                         {knownFaces.length > 0 ? (
                           <div className="dash-face-gallery">
                             {knownFaces.map((face) => (
-                              <button
+                              <div
                                 key={face.slug || face.name}
-                                type="button"
-                                className="dash-face-saved-card"
-                                onClick={() => setSelectedSavedFace(face)}
+                                className="dash-face-saved-card-wrapper"
                               >
-                                {savedFaceImages[face.slug] ? (
-                                  <img
-                                    src={savedFaceImages[face.slug]}
-                                    alt={face.name}
-                                    className="dash-face-saved-thumb"
-                                  />
-                                ) : (
-                                  <div className="dash-face-saved-fallback">
-                                    <FaUserCheck />
-                                    <span>No photo yet</span>
-                                  </div>
-                                )}
-                                <span className="dash-face-tag">{face.name || "Unknown"}</span>
-                                {face.relation && (
-                                  <span className="dash-face-relation">{face.relation}</span>
-                                )}
-                              </button>
+                                <button
+                                  type="button"
+                                  className="dash-face-saved-card"
+                                  onClick={() => setSelectedSavedFace(face)}
+                                >
+                                  {savedFaceImages[face.slug] ? (
+                                    <img
+                                      src={savedFaceImages[face.slug]}
+                                      alt={face.name}
+                                      className="dash-face-saved-thumb"
+                                    />
+                                  ) : (
+                                    <div className="dash-face-saved-fallback">
+                                      <FaUserCheck />
+                                      <span>No photo yet</span>
+                                    </div>
+                                  )}
+                                  <span className="dash-face-tag">{face.name || "Unknown"}</span>
+                                  {face.relation && (
+                                    <span className="dash-face-relation">{face.relation}</span>
+                                  )}
+                                </button>
+                                <div className="dash-face-card-actions">
+                                  <button
+                                    type="button"
+                                    className="dash-face-action-btn dash-face-action-btn--edit"
+                                    onClick={() => {
+                                      setEditingFace(face);
+                                      setEditName(face.name || "");
+                                      setEditRelation(face.relation || "");
+                                    }}
+                                    title="Edit face"
+                                  >
+                                    <FaEdit />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="dash-face-action-btn dash-face-action-btn--delete"
+                                    onClick={() => setDeletingFace(face)}
+                                    title="Delete face"
+                                  >
+                                    <FaTrash />
+                                  </button>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -910,9 +1096,9 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {selectedSavedFace.imageUrl && savedFaceImages[selectedSavedFace.slug] ? (
+            {selectedSavedFaceImage ? (
               <img
-                src={savedFaceImages[selectedSavedFace.slug]}
+                src={selectedSavedFaceImage}
                 alt={selectedSavedFace.name}
                 className="dash-face-modal-image"
               />
@@ -946,9 +1132,9 @@ export default function Dashboard() {
             </div>
             <div className="dash-face-popup-body">
               <div className="dash-face-popup-photo">
-                {recognitionPopup.imageUrl && savedFaceImages[recognitionPopup.slug] ? (
+                {recognitionFaceImage ? (
                   <img
-                    src={savedFaceImages[recognitionPopup.slug]}
+                    src={recognitionFaceImage}
                     alt={recognitionPopup.name}
                   />
                 ) : (
@@ -959,12 +1145,11 @@ export default function Dashboard() {
               </div>
               <div className="dash-face-popup-info">
                 <h3>{recognitionPopup.name}</h3>
-                {recognitionPopup.relation && (
+                {recognitionPopup.relation ? (
                   <p className="dash-face-popup-relation">
                     Relation: <strong>{recognitionPopup.relation}</strong>
                   </p>
-                )}
-                {!recognitionPopup.relation && (
+                ) : (
                   <p className="dash-face-popup-relation">
                     Relation: <strong>Not provided</strong>
                   </p>
@@ -972,6 +1157,152 @@ export default function Dashboard() {
                 <p className="dash-face-popup-note">
                   This person was matched with the photo you uploaded.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {enrollmentPopup && (
+        <div className="dash-face-popup-backdrop" onClick={() => setEnrollmentPopup(null)}>
+          <div className="dash-face-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="dash-face-popup-header">
+              <p className="dash-card-title">Person Already Added</p>
+              <button
+                type="button"
+                className="dash-face-modal-close"
+                onClick={() => setEnrollmentPopup(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="dash-face-popup-body">
+              <div className="dash-face-popup-photo">
+                {enrollmentPopup.imageUrl ? (
+                  <img
+                    src={enrollmentPopup.imageUrl}
+                    alt={enrollmentPopup.name}
+                  />
+                ) : (
+                  <div className="dash-face-popup-fallback">
+                    <FaUserCheck />
+                  </div>
+                )}
+              </div>
+              <div className="dash-face-popup-info">
+                <h3>{enrollmentPopup.name}</h3>
+                {enrollmentPopup.relation ? (
+                  <p className="dash-face-popup-relation">
+                    Relation: <strong>{enrollmentPopup.relation}</strong>
+                  </p>
+                ) : (
+                  <p className="dash-face-popup-relation">
+                    Relation: <strong>Not provided</strong>
+                  </p>
+                )}
+                <p className="dash-face-popup-note">
+                  This person is already saved in your faces. You can identify them using a new photo.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingFace && (
+        <div className="dash-face-modal-backdrop" onClick={() => setEditingFace(null)}>
+          <div className="dash-face-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="dash-face-modal-header">
+              <div>
+                <p className="dash-card-title">Edit Face</p>
+                <h3 className="dash-face-modal-title">Update {editingFace.name}</h3>
+              </div>
+              <button
+                type="button"
+                className="dash-face-modal-close"
+                onClick={() => setEditingFace(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="dash-face-edit-form">
+              <div className="dash-face-field">
+                <label htmlFor="editName" className="dash-face-field-label">Name</label>
+                <input
+                  id="editName"
+                  className="dash-face-input"
+                  type="text"
+                  placeholder="Enter person's name"
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                />
+              </div>
+
+              <div className="dash-face-field">
+                <label htmlFor="editRelation" className="dash-face-field-label">Relation (optional)</label>
+                <input
+                  id="editRelation"
+                  className="dash-face-input"
+                  type="text"
+                  placeholder="Son, daughter, grandson..."
+                  value={editRelation}
+                  onChange={(event) => setEditRelation(event.target.value)}
+                />
+              </div>
+
+              <div className="dash-face-edit-actions">
+                <button
+                  className="dash-face-btn dash-face-btn--secondary"
+                  onClick={() => setEditingFace(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="dash-face-btn dash-face-btn--primary"
+                  onClick={handleEditFace}
+                  disabled={!editName.trim()}
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingFace && (
+        <div className="dash-face-modal-backdrop" onClick={() => setDeletingFace(null)}>
+          <div className="dash-face-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="dash-face-modal-header">
+              <div>
+                <p className="dash-card-title">Delete Face</p>
+                <h3 className="dash-face-modal-title">Remove {deletingFace.name}</h3>
+              </div>
+              <button
+                type="button"
+                className="dash-face-modal-close"
+                onClick={() => setDeletingFace(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="dash-face-delete-confirm">
+              <p>Are you sure you want to delete this face? This action cannot be undone.</p>
+              <div className="dash-face-delete-actions">
+                <button
+                  className="dash-face-btn dash-face-btn--secondary"
+                  onClick={() => setDeletingFace(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="dash-face-btn dash-face-btn--danger"
+                  onClick={handleDeleteFace}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

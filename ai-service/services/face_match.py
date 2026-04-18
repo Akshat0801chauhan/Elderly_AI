@@ -45,6 +45,8 @@ class FaceMatcher:
                     "face_index": index,
                     "name": match["name"],
                     "similarity": match["similarity"],
+                    "slug": match.get("slug"),
+                    "relation": match.get("relation"),
                 }
             )
 
@@ -73,4 +75,9 @@ class FaceMatcher:
         if best_similarity < self.threshold:
             return None
 
-        return {"name": names[best_index], "similarity": best_similarity}
+        return {
+            "name": names[best_index],
+            "similarity": best_similarity,
+            "slug": compatible_faces[best_index].get("slug"),
+            "relation": compatible_faces[best_index].get("relation"),
+        }

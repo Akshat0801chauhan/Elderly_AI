@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Profile from "./components/Profile";
 import Medicines from "./components/Medicines";
 import Assistant from "./components/Assistant";
+import Activity from "./components/Activity";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 
@@ -43,6 +44,7 @@ function App() {
       {/* PROTECTED ROUTES */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/medicines" element={<ProtectedRoute><Medicines /></ProtectedRoute>} />
+      <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
       <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/assistant"   element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
     </Routes>

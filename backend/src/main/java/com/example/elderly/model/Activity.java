@@ -38,7 +38,7 @@ public class Activity{
     private LocalTime time;
 
     @Column(nullable = false)
-    private boolean isMandatory = true;
+    private boolean isMandatory = false;
 
     @Column(nullable = false)
     private boolean active = true;

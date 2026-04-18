@@ -54,7 +54,7 @@ public class ActivityService {
         activity.setTitle(request.getTitle().trim());
         activity.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
         activity.setTime(parseTime(request.getTime()));
-        activity.setMandatory(Boolean.TRUE.equals(request.getIsMandatory()));
+        activity.setMandatory(true);
         activity.setActive(true);
         activity.setElder(elder);
 
@@ -106,7 +106,7 @@ public class ActivityService {
         activity.setTitle(request.getTitle().trim());
         activity.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
         activity.setTime(parseTime(request.getTime()));
-        activity.setMandatory(Boolean.TRUE.equals(request.getIsMandatory()));
+        activity.setMandatory(true);
 
         return activityRepository.save(activity);
     }

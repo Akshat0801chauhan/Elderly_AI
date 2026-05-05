@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import {
   FaPills, FaCheck, FaExclamationCircle, FaClock, FaArrowRight,
   FaTint, FaWalking, FaRobot, FaUtensils, FaCamera, FaUserCheck, FaSearch, FaShieldAlt,
-  FaEdit, FaTrash
+  FaEdit, FaTrash, FaMapMarkerAlt, FaSms, FaLocationArrow
 } from "react-icons/fa";
 import {
   buildCaregiverEndpoint,
@@ -42,6 +42,54 @@ function getTimeUntil(timeStr) {
   const hrs = Math.floor(mins / 60);
   const rem = mins % 60;
   return rem > 0 ? `in ${hrs}h ${rem}m` : `in ${hrs}h`;
+}
+
+function formatLastSeen(value) {
+  if (!value) return "No location yet";
+  const seen = new Date(value);
+  const diffMs = Date.now() - seen.getTime();
+  if (Number.isNaN(seen.getTime())) return "No location yet";
+  if (diffMs < 60000) return "Just now";
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+}
+
+function formatMeters(value) {
+  if (value === null || value === undefined) return "-";
+  if (value >= 1000) return `${(value / 1000).toFixed(1)} km`;
+  return `${Math.round(value)} m`;
+}
+
+function parseCoordinate(value, type) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+
+  const direction = text.match(/[NSEW]/i)?.[0]?.toUpperCase();
+  const numbers = text.match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [];
+  if (numbers.length === 0) return null;
+
+  let decimal;
+  if (numbers.length === 1) {
+    decimal = numbers[0];
+  } else {
+    const degrees = Math.abs(numbers[0]);
+    const minutes = numbers[1] || 0;
+    const seconds = numbers[2] || 0;
+    decimal = degrees + minutes / 60 + seconds / 3600;
+    if (numbers[0] < 0) decimal *= -1;
+  }
+
+  if (direction === "S" || direction === "W") {
+    decimal = -Math.abs(decimal);
+  } else if (direction === "N" || direction === "E") {
+    decimal = Math.abs(decimal);
+  }
+
+  const limit = type === "lat" ? 90 : 180;
+  if (!Number.isFinite(decimal) || Math.abs(decimal) > limit) return null;
+  return Number(decimal.toFixed(6));
 }
 
 function ProgressRing({ taken, total }) {
@@ -99,6 +147,12 @@ export default function Dashboard() {
   const [savedFaceImages, setSavedFaceImages] = useState({});
   const [linkedElderlyUsers, setLinkedElderlyUsers] = useState([]);
   const [selectedElderlyId, setSelectedElderlyId] = useState(getSelectedElderlyUser()?.id || "");
+  const [safeZone, setSafeZone] = useState(null);
+  const [locationStatus, setLocationStatus] = useState(null);
+  const [locationAlerts, setLocationAlerts] = useState([]);
+  const [safeZoneForm, setSafeZoneForm] = useState({ homeLat: "", homeLng: "", radiusMeters: 300 });
+  const [safeZoneMessage, setSafeZoneMessage] = useState("");
+  const [locationTrackingStatus, setLocationTrackingStatus] = useState("");
   const navigate = useNavigate();
   const hasFetched = useRef(false);
   const savedFaceImagesRef = useRef({});
@@ -198,6 +252,37 @@ export default function Dashboard() {
 
     const text = await response.text();
     setLogs(text ? JSON.parse(text) : []);
+    await fetchLocationData(token, elderlyUser.id);
+  };
+
+  const fetchLocationData = async (token, elderlyId, options = {}) => {
+    const { syncSafeZoneForm = true } = options;
+    if (!elderlyId) {
+      setSafeZone(null);
+      setLocationStatus(null);
+      setLocationAlerts([]);
+      return;
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const [safeZoneRes, statusRes, alertsRes] = await Promise.all([
+      fetch(buildCaregiverEndpoint(elderlyId, "/safe-zone"), { headers }),
+      fetch(buildCaregiverEndpoint(elderlyId, "/location/status"), { headers }),
+      fetch(buildCaregiverEndpoint(elderlyId, "/location/alerts"), { headers }),
+    ]);
+
+    const safeZoneText = safeZoneRes.ok ? await safeZoneRes.text() : "";
+    const nextSafeZone = safeZoneText ? JSON.parse(safeZoneText) : null;
+    setSafeZone(nextSafeZone);
+    if (syncSafeZoneForm) {
+      setSafeZoneForm({
+        homeLat: nextSafeZone?.homeLat ?? "",
+        homeLng: nextSafeZone?.homeLng ?? "",
+        radiusMeters: nextSafeZone?.radiusMeters ?? 300,
+      });
+    }
+    setLocationStatus(statusRes.ok ? await statusRes.json() : null);
+    setLocationAlerts(alertsRes.ok ? await alertsRes.json() : []);
   };
 
   const fetchData = async () => {
@@ -246,6 +331,9 @@ export default function Dashboard() {
           setLogs([]);
           clearSelectedElderlyUser();
           setSelectedElderlyId("");
+          setSafeZone(null);
+          setLocationStatus(null);
+          setLocationAlerts([]);
           return;
         }
 
@@ -257,6 +345,9 @@ export default function Dashboard() {
           setLogs([]);
           clearSelectedElderlyUser();
           setSelectedElderlyId("");
+          setSafeZone(null);
+          setLocationStatus(null);
+          setLocationAlerts([]);
         }
         return;
       }
@@ -301,6 +392,85 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (role !== "ELDERLY" || loading) return undefined;
+    const token = localStorage.getItem("token");
+    if (!token || !navigator.geolocation) {
+      setLocationTrackingStatus("Location tracking is not available on this device.");
+      return undefined;
+    }
+
+    let cancelled = false;
+    let intervalId;
+
+    const sendCurrentLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          if (cancelled) return;
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/location/update`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              }),
+            });
+            setLocationTrackingStatus(response.ok ? "Location sharing is active." : "Unable to update location.");
+          } catch (err) {
+            console.error(err);
+            setLocationTrackingStatus("Unable to update location.");
+          }
+        },
+        () => {
+          if (!cancelled) {
+            setLocationTrackingStatus("Location permission is needed for safe-zone alerts.");
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 20000, timeout: 15000 }
+      );
+    };
+
+    sendCurrentLocation();
+    intervalId = window.setInterval(sendCurrentLocation, 45000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [role, loading]);
+
+  useEffect(() => {
+    if (role !== "CAREGIVER" || loading || !selectedElderlyId) return undefined;
+    const token = localStorage.getItem("token");
+    if (!token) return undefined;
+
+    let cancelled = false;
+    let refreshing = false;
+
+    const refreshCaregiverLocation = async () => {
+      if (refreshing || cancelled) return;
+      refreshing = true;
+      try {
+        await fetchLocationData(token, selectedElderlyId, { syncSafeZoneForm: false });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    refreshCaregiverLocation();
+    const intervalId = window.setInterval(refreshCaregiverLocation, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [role, loading, selectedElderlyId]);
+
   const now = new Date();
   const total = logs.length;
   const taken = logs.filter((l) => l.taken).length;
@@ -329,6 +499,18 @@ export default function Dashboard() {
       ? "Checking"
       : "Not available";
   const faceStatusTone = faceServiceStatus === "online" ? "ok" : faceServiceStatus === "checking" ? "checking" : "offline";
+  const safeZoneStatusClass = locationStatus?.status === "SAFE"
+    ? "safe-zone-status--safe"
+    : locationStatus?.status === "OUTSIDE"
+      ? "safe-zone-status--outside"
+      : "safe-zone-status--unset";
+  const safeZoneStatusLabel = locationStatus?.status === "SAFE"
+    ? "Inside safe zone"
+    : locationStatus?.status === "OUTSIDE"
+      ? "Outside safe zone"
+      : safeZone
+        ? "Waiting for elder location"
+        : "Safe zone not set";
 
   const companionTitle = () => {
     if (due.length > 0) return "A few medicines need your attention";
@@ -422,6 +604,68 @@ export default function Dashboard() {
       await fetchSelectedElderlyMedicines(token, elderlyUser);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUseCurrentLocationForSafeZone = () => {
+    setSafeZoneMessage("");
+    if (!navigator.geolocation) {
+      setSafeZoneMessage("Location is not available in this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSafeZoneForm((prev) => ({
+          ...prev,
+          homeLat: position.coords.latitude.toFixed(6),
+          homeLng: position.coords.longitude.toFixed(6),
+        }));
+        setSafeZoneMessage("Current location filled. Save it to update the safe area.");
+      },
+      () => setSafeZoneMessage("Allow location permission to use current location."),
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  const handleSaveSafeZone = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || !selectedElderlyId) return;
+
+    setSafeZoneMessage("");
+    try {
+      const homeLat = parseCoordinate(safeZoneForm.homeLat, "lat");
+      const homeLng = parseCoordinate(safeZoneForm.homeLng, "lng");
+      const radiusMeters = Number(safeZoneForm.radiusMeters);
+
+      if (homeLat === null || homeLng === null) {
+        setSafeZoneMessage("Enter valid coordinates, for example 21°00'34.2\"N and 75°32'05.7\"E.");
+        return;
+      }
+
+      const response = await fetch(buildCaregiverEndpoint(selectedElderlyId, "/safe-zone"), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          homeLat,
+          homeLng,
+          radiusMeters,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Unable to save safe area.");
+      }
+
+      await fetchLocationData(token, selectedElderlyId);
+      setSafeZoneMessage(`Safe area saved as ${homeLat}, ${homeLng}.`);
+    } catch (err) {
+      console.error(err);
+      setSafeZoneMessage(err.message || "Unable to save safe area.");
     }
   };
 
@@ -732,6 +976,110 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <>
+                    {!isElderly && (
+                      <div className="dash-safe-zone">
+                        <div className="dash-safe-zone-header">
+                          <div>
+                            <p className="dash-card-title">Safe Area</p>
+                            <h3 className="dash-face-heading">
+                              {selectedElderly?.name ? `${selectedElderly.name}'s vicinity` : "Elder vicinity"}
+                            </h3>
+                          </div>
+                          <div className={`safe-zone-status ${safeZoneStatusClass}`}>
+                            <FaMapMarkerAlt />
+                            <span>{safeZoneStatusLabel}</span>
+                          </div>
+                        </div>
+
+                        <div className="dash-safe-zone-grid">
+                          <div className="dash-safe-zone-form">
+                            <label>
+                              Home latitude
+                              <input
+                                type="text"
+                                inputMode="text"
+                                placeholder={`21°00'34.2"N or 21.009500`}
+                                value={safeZoneForm.homeLat}
+                                onChange={(event) => setSafeZoneForm((prev) => ({ ...prev, homeLat: event.target.value }))}
+                              />
+                            </label>
+                            <label>
+                              Home longitude
+                              <input
+                                type="text"
+                                inputMode="text"
+                                placeholder={`75°32'05.7"E or 75.534917`}
+                                value={safeZoneForm.homeLng}
+                                onChange={(event) => setSafeZoneForm((prev) => ({ ...prev, homeLng: event.target.value }))}
+                              />
+                            </label>
+                            <label>
+                              Radius
+                              <select
+                                value={safeZoneForm.radiusMeters}
+                                onChange={(event) => setSafeZoneForm((prev) => ({ ...prev, radiusMeters: event.target.value }))}
+                              >
+                                <option value={300}>300 m</option>
+                                <option value={500}>500 m</option>
+                                <option value={1000}>1 km</option>
+                              </select>
+                            </label>
+                            <div className="dash-safe-zone-actions">
+                              <button type="button" className="dash-safe-zone-btn" onClick={handleUseCurrentLocationForSafeZone}>
+                                <FaLocationArrow /> Use current location
+                              </button>
+                              <button
+                                type="button"
+                                className="dash-safe-zone-btn dash-safe-zone-btn--primary"
+                                onClick={handleSaveSafeZone}
+                                disabled={!safeZoneForm.homeLat || !safeZoneForm.homeLng}
+                              >
+                                Set Safe Area
+                              </button>
+                            </div>
+                            {safeZoneMessage && <p className="dash-safe-zone-note">{safeZoneMessage}</p>}
+                          </div>
+
+                          <div className="dash-safe-zone-summary">
+                            <div>
+                              <span>Distance from home</span>
+                              <strong>{formatMeters(locationStatus?.distanceMeters)}</strong>
+                            </div>
+                            <div>
+                              <span>Safe radius</span>
+                              <strong>{formatMeters(locationStatus?.radiusMeters || safeZone?.radiusMeters)}</strong>
+                            </div>
+                            <div>
+                              <span>Last seen</span>
+                              <strong>{formatLastSeen(locationStatus?.lastSeenAt)}</strong>
+                            </div>
+                            <div>
+                              <span>Outside readings</span>
+                              <strong>{locationStatus?.outsideReadingCount ?? 0}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="dash-location-alerts">
+                          <p className="dash-card-title">Recent SMS alerts</p>
+                          {locationAlerts.length > 0 ? (
+                            locationAlerts.slice(0, 3).map((alert) => (
+                              <div className="dash-location-alert" key={alert.id}>
+                                <FaSms />
+                                <div>
+                                  <strong>{alert.type === "SAFE_NOW" ? "Safe now" : "Outside safe zone"}</strong>
+                                  <span>{alert.message}</span>
+                                  <small>{alert.smsStatus || (alert.smsSent ? "Sent" : "Not sent")}</small>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="dash-safe-zone-note">No location alerts yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="dash-main-row">
                       <div className="dash-card">
                         <p className="dash-card-title">Today's Progress</p>
@@ -1022,6 +1370,21 @@ export default function Dashboard() {
 
           {isElderly && !loading && (
             <aside className="dash-side">
+              <div className="dash-side-card">
+                <p className="dash-card-title">Safe-zone tracking</p>
+                <div className="dash-tracking-row">
+                  <div className="dash-tracking-icon">
+                    <FaMapMarkerAlt />
+                  </div>
+                  <div>
+                    <p className="dash-tip-title">Location sharing</p>
+                    <p className="dash-tip-text">
+                      {locationTrackingStatus || "Preparing location tracking..."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="dash-side-hero">
                 <p className="dash-side-kicker">Companion Note</p>
                 <h3>{companionTitle()}</h3>

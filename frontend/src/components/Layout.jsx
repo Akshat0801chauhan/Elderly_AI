@@ -63,9 +63,7 @@ export default function Layout({ children }) {
               <FaCheck /> <span>Personal AI</span>
             </div>
 
-            <div className="menu">
-              <FaHeart /> <span>Memories</span>
-            </div>
+           
 
             <div
               className={`menu ${isActive("/profile") ? "active" : ""}`}

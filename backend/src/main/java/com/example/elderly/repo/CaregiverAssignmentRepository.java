@@ -11,6 +11,8 @@ public interface CaregiverAssignmentRepository extends JpaRepository<CaregiverAs
 
     List<CaregiverAssignment> findByCaregiverId(String caregiverId);
 
+    Optional<CaregiverAssignment> findByElderlyId(String elderlyId);
+
     Optional<CaregiverAssignment> findByCaregiverIdAndElderlyId(String caregiverId, String elderlyId);
 
     boolean existsByCaregiverIdAndElderlyId(String caregiverId, String elderlyId);

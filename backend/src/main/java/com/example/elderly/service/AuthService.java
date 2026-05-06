@@ -48,7 +48,8 @@ public AuthResponse register(RegisterRequest request) {
     Role role = parseRole(request.getRole());
     validateRoleSpecificFields(request, role);
 
-    if(userRepository.findByEmail(email).isPresent()) {
+    var existingUser = userRepository.findByEmail(email);
+    if (existingUser.isPresent()) {
         throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exists");
     }
 

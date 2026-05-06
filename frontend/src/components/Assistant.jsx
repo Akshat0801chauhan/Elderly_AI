@@ -3,6 +3,7 @@ import Layout from "./Layout";
 import { FaMicrophone, FaStop, FaPaperPlane } from "react-icons/fa";
 import { BsStars } from "react-icons/bs";
 import { getSelectedElderlyUser } from "../utils/caregiverContext";
+import { buildApiUrl } from "../utils/apiConfig";
 import "./Assistant.css";
 
 const SUGGESTED = [
@@ -41,7 +42,7 @@ export default function Assistant() {
 
       try {
         const query = elderId ? `?elderId=${encodeURIComponent(elderId)}` : "";
-        const res = await fetch(`http://localhost:8080/api/chat/proactive${query}`, {
+        const res = await fetch(buildApiUrl(`/api/chat/proactive${query}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -112,7 +113,7 @@ export default function Assistant() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/chat", {
+      const res = await fetch(buildApiUrl("/api/chat"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

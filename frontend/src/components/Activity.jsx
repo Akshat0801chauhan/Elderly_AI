@@ -15,8 +15,7 @@ import {
   FaUserFriends,
 } from "react-icons/fa";
 import { getSelectedElderlyUser } from "../utils/caregiverContext";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../utils/apiConfig";
 
 function parseTimeToday(timeStr) {
   if (!timeStr) return null;

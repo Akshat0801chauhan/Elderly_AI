@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./apiConfig";
+
 const STORAGE_KEY = "selectedElderlyUser";
 
 export function getSelectedElderlyUser() {
@@ -23,5 +25,5 @@ export function clearSelectedElderlyUser() {
 }
 
 export function buildCaregiverEndpoint(elderlyId, suffix) {
-  return `http://localhost:8080/api/caregiver/elderly-users/${elderlyId}${suffix}`;
+  return buildApiUrl(`/api/caregiver/elderly-users/${elderlyId}${suffix}`);
 }

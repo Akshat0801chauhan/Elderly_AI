@@ -13,8 +13,7 @@ import {
   getSelectedElderlyUser,
   setSelectedElderlyUser,
 } from "../utils/caregiverContext";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../utils/apiConfig";
 
 function parseTimeToday(timeStr) {
   if (!timeStr) return null;

@@ -8,6 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import { getSelectedElderlyUser, setSelectedElderlyUser } from "../utils/caregiverContext";
+import { buildApiUrl } from "../utils/apiConfig";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -65,7 +66,7 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const profileRes = await fetch("http://localhost:8080/api/profile", {
+        const profileRes = await fetch(buildApiUrl("/api/profile"), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!profileRes.ok) {
@@ -77,7 +78,7 @@ export default function Profile() {
         setFormData(profileData);
 
         if (profileData.role === "CAREGIVER") {
-          const linkedRes = await fetch("http://localhost:8080/api/caregiver/elderly-users", {
+          const linkedRes = await fetch(buildApiUrl("/api/caregiver/elderly-users"), {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -137,7 +138,7 @@ export default function Profile() {
         pastIllnesses: formData.pastIllnesses,
       };
 
-      const res = await fetch("http://localhost:8080/api/profile", {
+      const res = await fetch(buildApiUrl("/api/profile"), {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),

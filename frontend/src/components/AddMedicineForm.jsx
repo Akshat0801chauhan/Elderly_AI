@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./AddMedicineForm.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { buildApiUrl } from "../utils/apiConfig";
 
 const MEALS = ["breakfast", "lunch", "dinner"];
 
@@ -32,7 +33,7 @@ const defaultMealTimes = {
   dinnerTime: "",
 };
 
-export default function AddMedicineForm({ close, fetchMedicines, fetchProgress, existing, apiBasePath = "http://localhost:8080/api/medicine" }) {
+export default function AddMedicineForm({ close, fetchMedicines, fetchProgress, existing, apiBasePath = buildApiUrl("/api/medicine") }) {
   const token = localStorage.getItem("token");
 
   const [form, setForm] = useState({

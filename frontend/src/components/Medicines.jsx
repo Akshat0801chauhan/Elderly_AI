@@ -8,6 +8,7 @@ import {
   FaPen, FaTrash, FaPlus, FaSearch
 } from "react-icons/fa";
 import { buildCaregiverEndpoint, getSelectedElderlyUser } from "../utils/caregiverContext";
+import { buildApiUrl } from "../utils/apiConfig";
 
 function parseTimeToday(timeStr) {
   if (!timeStr) return null;
@@ -205,10 +206,10 @@ export default function Medicines() {
   const isCaregiver = role === "CAREGIVER";
   const medicineBasePath = isCaregiver && caregiverTarget?.id
     ? buildCaregiverEndpoint(caregiverTarget.id, "/medicines")
-    : "http://localhost:8080/api/medicine";
+    : buildApiUrl("/api/medicine");
 
   const fetchProfile = async () => {
-    const response = await fetch("http://localhost:8080/api/profile", {
+    const response = await fetch(buildApiUrl("/api/profile"), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -227,7 +228,7 @@ export default function Medicines() {
   const fetchToday = async (userRole, targetUser) => {
     const endpoint = userRole === "CAREGIVER" && targetUser?.id
       ? buildCaregiverEndpoint(targetUser.id, "/medicines/today")
-      : "http://localhost:8080/api/medicine";
+      : buildApiUrl("/api/medicine");
 
     try {
       const response = await fetch(endpoint, {
@@ -248,7 +249,7 @@ export default function Medicines() {
   const fetchAll = async (userRole, targetUser) => {
     const endpoint = userRole === "CAREGIVER" && targetUser?.id
       ? buildCaregiverEndpoint(targetUser.id, "/medicines")
-      : "http://localhost:8080/api/medicine/all";
+      : buildApiUrl("/api/medicine/all");
 
     try {
       const response = await fetch(endpoint, {
@@ -297,7 +298,7 @@ export default function Medicines() {
   const markAsTaken = async (medicineId) => {
     try {
       setTakingId(medicineId);
-      const response = await fetch(`http://localhost:8080/api/medicine/take/${medicineId}`, {
+      const response = await fetch(buildApiUrl(`/api/medicine/take/${medicineId}`), {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });

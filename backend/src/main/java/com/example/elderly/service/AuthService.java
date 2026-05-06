@@ -1,5 +1,6 @@
 package com.example.elderly.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,7 +31,8 @@ public class AuthService {
 
 public AuthResponse login(AuthRequest request)
 {
-    User user = userRepository.findByEmail(request.getEmail().trim())
+    String email = request.getEmail().trim().toLowerCase();
+    User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
     if(!encoder.matches(request.getPassword(),user.getPassword())){
@@ -42,7 +44,7 @@ public AuthResponse login(AuthRequest request)
 
 }
 public AuthResponse register(RegisterRequest request) {
-    String email = request.getEmail().trim();
+    String email = request.getEmail().trim().toLowerCase();
     Role role = parseRole(request.getRole());
     validateRoleSpecificFields(request, role);
 
@@ -65,9 +67,12 @@ public AuthResponse register(RegisterRequest request) {
     user.setChronicDiseases(role == Role.ELDERLY ? trimToNull(request.getChronicDiseases()) : null);
     user.setPastIllnesses(role == Role.ELDERLY ? trimToNull(request.getPastIllnesses()) : null);
 
-    userRepository.save(user);
+    try {
+        userRepository.save(user);
+    } catch (DataIntegrityViolationException ex) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered", ex);
+    }
 
-    
     String token = jwtUtil.generateToken(user.getEmail());
 
     return new AuthResponse(token);

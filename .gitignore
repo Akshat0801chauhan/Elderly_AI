@@ -31,7 +31,7 @@ backend/src/main/resources/application.properties
 # =========================
 # AI SERVICE (Python)
 # =========================
-ai-service/.venv/
+.venv/
 ai-service/__pycache__/
 ai-service/**/*.py[cod]
 ai-service/data/encodings/*
@@ -78,3 +78,5 @@ build/
 # OPTIONAL
 # =========================
 HELP.md
+backend/
+frontend/
